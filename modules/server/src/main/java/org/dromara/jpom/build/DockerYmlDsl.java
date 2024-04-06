@@ -233,14 +233,14 @@ public class DockerYmlDsl extends BaseJsonModel {
     }
 
     /**
-     * 检查 go 插件
+     * 检查 java 插件
      *
      * @param step 参数
      */
     private void javaPluginCheck(Map<String, Object> step) {
         Assert.notNull(step.get("version"), "java 插件 version 不能为空");
         Integer version = Integer.valueOf(String.valueOf(step.get("version")));
-        List<Integer> supportedVersions = ListUtil.of(8, 11, 17, 18);
+        List<Integer> supportedVersions = ListUtil.of(8, 11, 17, 18, 21, 22, 23, 24);
         Assert.isTrue(supportedVersions.contains(version), String.format("目前java 插件支持的版本: %s", supportedVersions));
     }
 
