@@ -1,5 +1,5 @@
 <template>
-  <terminal :url="this.socketUrl" />
+  <terminal :url="socketUrl" />
 </template>
 
 <script>
@@ -20,7 +20,8 @@ export default {
       default: ''
     },
     containerId: {
-      type: String
+      type: String,
+      default: ''
     },
     machineDockerId: {
       type: String,

@@ -1,19 +1,29 @@
-import axios from "./config";
+///
+/// Copyright (c) 2019 Of Him Code Technology Studio
+/// Jpom is licensed under Mulan PSL v2.
+/// You can use this software according to the terms and conditions of the Mulan PSL v2.
+/// You may obtain a copy of Mulan PSL v2 at:
+/// 			http://license.coscl.org.cn/MulanPSL2
+/// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+/// See the Mulan PSL v2 for more details.
+///
+
+import axios from './config'
 
 // 获取系统菜单列表
 export function getMenu() {
   return axios({
-    url: "/menus_data.json",
-    method: "post",
-  });
+    url: '/menus_data.json',
+    method: 'post'
+  })
 }
 
 // 获取系统菜单列表
 export function getSystemMenu() {
   return axios({
-    url: "/system_menus_data.json",
-    method: "post",
-  });
+    url: '/system_menus_data.json',
+    method: 'post'
+  })
 }
 
 /**
@@ -22,8 +32,8 @@ export function getSystemMenu() {
  */
 export function getNodeMenu(nodeId) {
   return axios({
-    url: "/menus_data.json",
-    method: "post",
-    data: { nodeId },
-  });
+    url: '/menus_data.json',
+    method: 'post',
+    data: { nodeId }
+  })
 }

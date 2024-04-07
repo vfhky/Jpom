@@ -1,8 +1,8 @@
 <template>
   <div>
-    <a-tabs :activeKey="activeKey" @change="tabCallback">
+    <a-tabs :active-key="activeKey" @change="tabCallback">
       <a-tab-pane v-for="item in logList" :key="item.id">
-        <template v-slot:tab>
+        <template #tab>
           <span>
             <LoadingOutlined v-if="!logMap[item.id] || logMap[item.id].run" />
             {{ item.sshName }}
@@ -24,7 +24,8 @@ export default {
   },
   props: {
     temp: {
-      type: Object
+      type: Object,
+      default: () => ({})
     },
     height: {
       type: String,

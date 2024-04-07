@@ -5,24 +5,25 @@
       :data-source="list"
       size="middle"
       :columns="columns"
-      @change="changePage"
       :pagination="pagination"
       bordered
-      rowKey="id"
+      row-key="id"
       :scroll="{
         x: 'max-content'
       }"
+      @change="changePage"
     >
-      <template v-slot:title>
+      <template #title>
         <a-space wrap class="search-box">
           <a-input
             v-model:value="listQuery['%scriptName%']"
             placeholder="名称"
-            @pressEnter="loadData"
-            allowClear
+            allow-clear
             class="search-input-item"
+            @press-enter="loadData"
           />
           <a-select
+            v-model:value="listQuery.triggerExecType"
             show-search
             :filter-option="
               (input, option) => {
@@ -34,14 +35,14 @@
                 )
               }
             "
-            v-model:value="listQuery.triggerExecType"
-            allowClear
+            allow-clear
             placeholder="触发类型"
             class="search-input-item"
           >
             <a-select-option v-for="(val, key) in triggerExecTypeMap" :key="key">{{ val }}</a-select-option>
           </a-select>
           <a-select
+            v-model:value="listQuery.status"
             show-search
             :filter-option="
               (input, option) => {
@@ -53,29 +54,28 @@
                 )
               }
             "
-            v-model:value="listQuery.status"
-            allowClear
+            allow-clear
             placeholder="状态"
             class="search-input-item"
           >
             <a-select-option v-for="(val, key) in statusMap" :key="key">{{ val }}</a-select-option>
           </a-select>
           <a-range-picker
-            @change="
-              (value, dateString) => {
-                if (!dateString[0] || !dateString[1]) {
-                  this.listQuery.createTimeMillis = ''
-                } else {
-                  this.listQuery.createTimeMillis = `${dateString[0]} ~ ${dateString[1]}`
-                }
-              }
-            "
-            allowClear
-            inputReadOnly
+            allow-clear
+            input-read-only
             :show-time="{ format: 'HH:mm:ss' }"
             :placeholder="['执行时间开始', '执行时间结束']"
             format="YYYY-MM-DD HH:mm:ss"
-            valueFormat="YYYY-MM-DD HH:mm:ss"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            @change="
+              (value, dateString) => {
+                if (!dateString[0] || !dateString[1]) {
+                  listQuery.createTimeMillis = ''
+                } else {
+                  listQuery.createTimeMillis = `${dateString[0]} ~ ${dateString[1]}`
+                }
+              }
+            "
           />
           <a-tooltip title="按住 Ctr 或者 Alt/Option 键点击按钮快速回到第一页">
             <a-button type="primary" :loading="loading" @click="loadData">搜索</a-button>
@@ -126,12 +126,12 @@
     <script-log-view
       v-if="logVisible > 0"
       :visible="logVisible != 0"
+      :temp="temp"
       @close="
         () => {
           logVisible = 0
         }
       "
-      :temp="temp"
     />
   </div>
 </template>
@@ -245,33 +245,23 @@ export default {
       this.temp = record
     },
     handleDelete(record) {
-      const that = this
       $confirm({
         title: '系统提示',
         content: '真的要删除执行记录么？',
         zIndex: 1009,
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            // 组装参数
-            const params = {
-              id: record.scriptId,
-              executeId: record.id
-            }
-            // 删除
-            scriptDel(params)
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.loadData()
-                }
-
-                resolve()
+        onOk: () => {
+          return scriptDel({
+            id: record.scriptId,
+            executeId: record.id
+          }).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.loadData()
+            }
           })
         }
       })

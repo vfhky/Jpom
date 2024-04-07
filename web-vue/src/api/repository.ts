@@ -1,4 +1,14 @@
-import axios, { loadRouterBase } from "./config";
+///
+/// Copyright (c) 2019 Of Him Code Technology Studio
+/// Jpom is licensed under Mulan PSL v2.
+/// You can use this software according to the terms and conditions of the Mulan PSL v2.
+/// You may obtain a copy of Mulan PSL v2 at:
+/// 			http://license.coscl.org.cn/MulanPSL2
+/// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+/// See the Mulan PSL v2 for more details.
+///
+
+import axios, { loadRouterBase } from './config'
 
 /**
  * 分页获取仓库列表
@@ -16,10 +26,10 @@ import axios, { loadRouterBase } from "./config";
  */
 export function getRepositoryList(params) {
   return axios({
-    url: "/build/repository/list",
-    method: "post",
-    data: params,
-  });
+    url: '/build/repository/list',
+    method: 'post',
+    data: params
+  })
 }
 
 /*
@@ -27,7 +37,7 @@ export function getRepositoryList(params) {
  *
  */
 export function importTemplate(data) {
-  return loadRouterBase("/build/repository/import-template", data);
+  return loadRouterBase('/build/repository/import-template', data)
 }
 /**
  * 导出CSV
@@ -35,20 +45,20 @@ export function importTemplate(data) {
  * @returns {string}
  */
 export function exportData(data) {
-  return loadRouterBase("/build/repository/export", data);
+  return loadRouterBase('/build/repository/export', data)
 }
 // 导入数据
 export function importData(formData) {
   return axios({
-    url: "/build/repository/import-data",
+    url: '/build/repository/import-data',
     headers: {
-      "Content-Type": "multipart/form-data;charset=UTF-8",
+      'Content-Type': 'multipart/form-data;charset=UTF-8'
     },
-    method: "post",
+    method: 'post',
     // 0 表示无超时时间
     timeout: 0,
-    data: formData,
-  });
+    data: formData
+  })
 }
 /**
  * 获取仓库信息
@@ -57,10 +67,10 @@ export function importData(formData) {
  */
 export function getRepositoryInfo(params) {
   return axios({
-    url: "/build/repository/get",
-    method: "get",
-    params,
-  });
+    url: '/build/repository/get',
+    method: 'get',
+    params
+  })
 }
 
 /**
@@ -70,10 +80,10 @@ export function getRepositoryInfo(params) {
  */
 export function listRepositoryGroup(params) {
   return axios({
-    url: "/build/repository/list-group",
-    method: "get",
-    params,
-  });
+    url: '/build/repository/list-group',
+    method: 'get',
+    params
+  })
 }
 
 /**
@@ -92,10 +102,10 @@ export function listRepositoryGroup(params) {
  */
 export function editRepository(params) {
   return axios({
-    url: "/build/repository/edit",
-    method: "post",
-    data: params,
-  });
+    url: '/build/repository/edit',
+    method: 'post',
+    data: params
+  })
 }
 
 /**
@@ -108,10 +118,10 @@ export function editRepository(params) {
  */
 export function deleteRepository(params) {
   return axios({
-    url: "/build/repository/delete",
-    method: "post",
-    data: params,
-  });
+    url: '/build/repository/delete',
+    method: 'post',
+    data: params
+  })
 }
 /**
  * restHideField by id
@@ -120,31 +130,31 @@ export function deleteRepository(params) {
  */
 export function restHideField(id) {
   return axios({
-    url: "/build/repository/rest_hide_field",
-    method: "post",
-    data: { id },
-  });
+    url: '/build/repository/rest_hide_field',
+    method: 'post',
+    data: { id }
+  })
 }
 
 export function authorizeRepos(param) {
   return axios({
-    url: "/build/repository/authorize_repos",
-    method: "get",
-    params: param,
-  });
+    url: '/build/repository/authorize_repos',
+    method: 'get',
+    params: param
+  })
 }
 
 export function providerInfo() {
   return axios({
-    url: "/build/repository/provider_info",
-    method: "get",
-  });
+    url: '/build/repository/provider_info',
+    method: 'get'
+  })
 }
 
 export function sortItem(params) {
   return axios({
-    url: "/build/repository/sort-item",
-    method: "get",
-    params: params,
-  });
+    url: '/build/repository/sort-item',
+    method: 'get',
+    params: params
+  })
 }

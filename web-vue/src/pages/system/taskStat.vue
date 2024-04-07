@@ -1,23 +1,41 @@
 <template>
   <div>
-    <a-table size="middle" rowKey="taskId" :columns="taskColumns" bordered :data-source="taskList" :pagination="false">
-      <template #title>
+    <CustomTable
+      is-show-tools
+      default-auto-refresh
+      :auto-refresh-time="30"
+      :active-page="activePage"
+      table-name="system-task-stat"
+      empty-description="没有任何运行中的任务"
+      size="middle"
+      row-key="taskId"
+      :columns="taskColumns"
+      bordered
+      :data-source="taskList"
+      @refresh="refresh"
+      :pagination="false"
+    >
+      <!-- <template #title>
         <a-button size="small" type="primary" @click="refresh"><ReloadOutlined /></a-button>
-      </template>
-      <template #bodyCell="{ column, text, record }">
+      </template> -->
+      <template #tableBodyCell="{ column, text, record }">
         <a-tooltip v-if="column.tooltip" placement="topLeft" :title="text">
           <span>{{ text }}</span>
         </a-tooltip>
         <a-tooltip v-else-if="column.dataIndex === 'lastExecuteTime'" :title="parseTime(text)">
           <span>{{ parseTime(text) }}</span>
         </a-tooltip>
+        <a-tooltip v-else-if="column.dataIndex === 'desc'" :title="text">
+          <span>{{ text }}</span>
+        </a-tooltip>
         <a-tooltip v-else-if="column.dataIndex === 'cron'" placement="topLeft" :title="text">
-          <a-button type="link" v-if="text" style="padding: 0" size="small" @click="toCronTaskList(text)">
+          <a-button v-if="text" type="link" style="padding: 0" size="small" @click="toCronTaskList(text)">
             {{ text }} <UnorderedListOutlined />
           </a-button>
+          <template v-else>{{ record.desc }}</template>
         </a-tooltip>
       </template>
-    </a-table>
+    </CustomTable>
   </div>
 </template>
 <script>
@@ -30,6 +48,7 @@ export default {
       default: () => []
     }
   },
+  emits: ['refresh'],
   data() {
     return {
       temp: {},
@@ -66,10 +85,15 @@ export default {
         {
           title: 'cron',
           dataIndex: 'cron'
-
           // sorter: (a, b) => (a && b ? a.localeCompare(b, "zh-CN") : 0),
           // sortDirections: ["descend", "ascend"],
         },
+        // {
+        //   title: '描述',
+        //   dataIndex: 'desc'
+        //   // sorter: (a, b) => (a && b ? a.localeCompare(b, "zh-CN") : 0),
+        //   // sortDirections: ["descend", "ascend"],
+        // },
         {
           title: '执行次数',
           dataIndex: 'executeCount',
@@ -102,11 +126,16 @@ export default {
       ]
     }
   },
+  computed: {
+    activePage() {
+      return this.$attrs.routerUrl === this.$route.path
+    }
+  },
   mounted() {},
   methods: {
     parseTime,
     refresh() {
-      this.$emit('refresh')
+      this.$emit('refresh', {})
     },
     // 前往 cron 详情
     toCronTaskList(cron) {

@@ -9,21 +9,21 @@
       x: 'max-content'
     }"
   >
-    <template v-slot:title>
+    <template #title>
       <a-space>
         <a-input
           v-model:value="listQuery['name']"
-          @pressEnter="loadData"
           placeholder="名称"
           class="search-input-item"
+          @press-enter="loadData"
         />
 
         <div>
           悬空
-          <a-switch checked-children="是" un-checked-children="否" v-model:checked="listQuery['dangling']" />
+          <a-switch v-model:checked="listQuery['dangling']" checked-children="是" un-checked-children="否" />
         </div>
 
-        <a-button type="primary" @click="loadData" :loading="loading">搜索</a-button>
+        <a-button type="primary" :loading="loading" @click="loadData">搜索</a-button>
       </a-space>
     </template>
     <template #bodyCell="{ column, text, record }">
@@ -34,8 +34,8 @@
       </template>
 
       <template v-else-if="column.dataIndex === 'name'">
-        <a-popover title="卷标签" v-if="record.labels">
-          <template v-slot:content>
+        <a-popover v-if="record.labels" title="卷标签">
+          <template #content>
             <p v-for="(value, key) in record.labels" :key="key">{{ key }}<ArrowRightOutlined />{{ value }}</p>
           </template>
           <PushpinOutlined />
@@ -82,7 +82,8 @@ export default {
       default: ''
     },
     urlPrefix: {
-      type: String
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -99,7 +100,7 @@ export default {
           width: 80,
           ellipsis: true,
           align: 'center',
-          customRender: ({ text, record, index }) => `${index + 1}`
+          customRender: ({ index }) => `${index + 1}`
         },
         {
           title: '名称',
@@ -170,33 +171,26 @@ export default {
       if (!action) {
         return
       }
-      const that = this
       $confirm({
         title: '系统提示',
         content: action.msg,
         zIndex: 1009,
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            // 组装参数
-            const params = {
-              id: that.reqDataId,
+        onOk: () => {
+          return action
+            .api(this.urlPrefix, {
+              id: this.reqDataId,
               volumeName: record.name
-            }
-            action
-              .api(that.urlPrefix, params)
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.loadData()
-                }
-                resolve()
-              })
-              .catch(reject)
-          })
+            })
+            .then((res) => {
+              if (res.code === 200) {
+                $notification.success({
+                  message: res.msg
+                })
+                this.loadData()
+              }
+            })
         }
       })
     }

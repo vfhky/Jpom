@@ -1,24 +1,31 @@
 <template>
   <div class="">
     <!-- 数据表格 -->
-    <a-table
+    <CustomTable
+      is-show-tools
+      default-auto-refresh
+      :auto-refresh-time="30"
+      :active-page="activePage"
+      table-name="node-script-list"
+      empty-description="没有任何节点脚本"
       :data-source="list"
       size="middle"
       :columns="columns"
-      @change="changePage"
       :pagination="pagination"
       bordered
-      rowKey="id"
+      row-key="id"
       :scroll="{
         x: 'max-content'
       }"
+      @change="changePage"
+      @refresh="loadData"
     >
-      <template v-slot:title>
+      <template #title>
         <a-space wrap class="search-box">
           <a-select
             v-if="!nodeId"
             v-model:value="listQuery.nodeId"
-            allowClear
+            allow-clear
             placeholder="请选择节点"
             class="search-input-item"
           >
@@ -26,16 +33,16 @@
           </a-select>
           <a-input
             v-model:value="listQuery['%name%']"
-            @pressEnter="loadData"
             placeholder="名称"
-            allowClear
+            allow-clear
             class="search-input-item"
+            @press-enter="loadData"
           />
           <a-input
             v-model:value="listQuery['%autoExecCron%']"
-            @pressEnter="loadData"
             placeholder="定时执行"
             class="search-input-item"
+            @press-enter="loadData"
           />
           <a-tooltip title="按住 Ctr 或者 Alt/Option 键点击按钮快速回到第一页">
             <a-button :loading="loading" type="primary" @click="loadData">搜索</a-button>
@@ -46,7 +53,7 @@
           <template v-if="!nodeId">
             <a-dropdown v-if="nodeMap && Object.keys(nodeMap).length">
               <a-button type="primary" danger> 同步缓存<DownOutlined /></a-button>
-              <template v-slot:overlay>
+              <template #overlay>
                 <a-menu>
                   <a-menu-item v-for="(nodeName, key) in nodeMap" :key="key" @click="sync(key)">
                     <a href="javascript:;">{{ nodeName }} <SyncOutlined /></a>
@@ -56,24 +63,25 @@
             </a-dropdown>
           </template>
           <a-button v-else type="primary" danger @click="sync(nodeId)"> <SyncOutlined />同步缓存 </a-button>
-
-          <a-tooltip>
-            <template v-slot:title>
-              <div>节点脚本模版是存储在节点中的命令脚本用于在线管理一些脚本命令，如初始化软件环境、管理应用程序等</div>
-
-              <div>
-                <ul>
-                  <li>执行时候默认不加载全部环境变量、需要脚本里面自行加载</li>
-                  <li>命令文件将在 ${插件端数据目录}/script/xxxx.sh 、bat 执行</li>
-                  <li>新增脚本模版需要到节点管理中去新增</li>
-                </ul>
-              </div>
-            </template>
-            <QuestionCircleOutlined />
-          </a-tooltip>
         </a-space>
       </template>
-      <template #bodyCell="{ column, text, record, index }">
+      <template #tableHelp>
+        <a-tooltip>
+          <template #title>
+            <div>节点脚本模版是存储在节点中的命令脚本用于在线管理一些脚本命令，如初始化软件环境、管理应用程序等</div>
+
+            <div>
+              <ul>
+                <li>执行时候默认不加载全部环境变量、需要脚本里面自行加载</li>
+                <li>命令文件将在 ${插件端数据目录}/script/xxxx.sh 、bat 执行</li>
+                <li>新增脚本模版需要到节点管理中去新增</li>
+              </ul>
+            </div>
+          </template>
+          <QuestionCircleOutlined />
+        </a-tooltip>
+      </template>
+      <template #tableBodyCell="{ column, text, record }">
         <template v-if="column.tooltip">
           <a-tooltip placement="topLeft" :title="text">
             <span>{{ text }}</span>
@@ -81,7 +89,7 @@
         </template>
 
         <template v-else-if="column.dataIndex === 'name'">
-          <a-tooltip @click="handleEdit(record)" placement="topLeft" :title="text">
+          <a-tooltip placement="topLeft" :title="text" @click="handleEdit(record)">
             <!-- <span>{{ text }}</span> -->
             <a-button type="link" style="padding: 0" size="small">{{ text }}</a-button>
           </a-tooltip>
@@ -110,7 +118,7 @@
                 更多
                 <DownOutlined />
               </a>
-              <template v-slot:overlay>
+              <template #overlay>
                 <a-menu>
                   <a-menu-item>
                     <!-- <a-button size="small" :type="`${record.scriptType === 'server-sync' ? '' : 'primary'}`" @click="handleEdit(record)">{{ record.scriptType === "server-sync" ? "查看" : " 编辑" }}</a-button> -->
@@ -140,12 +148,12 @@
           </a-space>
         </template>
       </template>
-    </a-table>
+    </CustomTable>
     <!-- 编辑区 -->
     <ScriptEdit
       v-if="editScriptVisible"
-      :nodeId="temp.nodeId"
-      :scriptId="temp.scriptId"
+      :node-id="temp.nodeId"
+      :script-id="temp.scriptId"
       @close="
         () => {
           editScriptVisible = false
@@ -160,37 +168,37 @@
       :open="drawerConsoleVisible"
       @close="
         () => {
-          this.drawerConsoleVisible = false
+          drawerConsoleVisible = false
         }
       "
     >
       <script-console
         v-if="drawerConsoleVisible"
-        :nodeId="temp.nodeId"
-        :defArgs="temp.defArgs"
         :id="temp.id"
-        :scriptId="temp.scriptId"
+        :node-id="temp.nodeId"
+        :def-args="temp.defArgs"
+        :script-id="temp.scriptId"
       />
     </a-drawer>
     <!-- 脚本日志 -->
     <a-drawer
-      destroyOnClose
+      destroy-on-close
       :title="drawerTitle"
       width="50vw"
       :open="drawerLogVisible"
       @close="
         () => {
-          this.drawerLogVisible = false
+          drawerLogVisible = false
         }
       "
     >
-      <script-log v-if="drawerLogVisible" :scriptId="temp.scriptId" :nodeId="temp.nodeId" />
+      <script-log v-if="drawerLogVisible" :script-id="temp.scriptId" :node-id="temp.nodeId" />
     </a-drawer>
     <!-- 触发器 -->
-    <a-modal destroyOnClose v-model:open="triggerVisible" title="触发器" width="50%" :footer="null">
+    <a-modal v-model:open="triggerVisible" destroy-on-close title="触发器" width="50%" :footer="null">
       <a-form ref="editTriggerForm" :model="temp" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
         <a-tabs default-active-key="1">
-          <template v-slot:rightExtra>
+          <template #rightExtra>
             <a-tooltip title="重置触发器 token 信息,重置后之前的触发器 token 将失效">
               <a-button type="primary" size="small" @click="resetTrigger">重置</a-button>
             </a-tooltip>
@@ -198,25 +206,29 @@
           <a-tab-pane key="1" tab="执行">
             <a-space direction="vertical" style="width: 100%">
               <a-alert message="温馨提示" type="warning" show-icon>
-                <template v-slot:description>
+                <template #description>
                   <ul>
                     <li>单个触发器地址中：第一个随机字符串为脚本ID，第二个随机字符串为 token</li>
                     <li>
                       重置为重新生成触发地址,重置成功后之前的触发器地址将失效,触发器绑定到生成触发器到操作人上,如果将对应的账号删除触发器将失效
                     </li>
                     <li>批量触发参数 BODY json： [ { "id":"1", "token":"a" } ]</li>
+                    <li>
+                      单个触发器请求支持将参数解析为环境变量传入脚本执行，比如传入参数名为 abc=efg
+                      在脚本中引入则为：${trigger_abc}
+                    </li>
                   </ul>
                 </template>
               </a-alert>
               <a-alert type="info" :message="`单个触发器地址(点击可以复制)`">
-                <template v-slot:description>
+                <template #description>
                   <a-typography-paragraph :copyable="{ tooltip: false, text: temp.triggerUrl }">
                     <a-tag>GET</a-tag> <span>{{ temp.triggerUrl }} </span>
                   </a-typography-paragraph>
                 </template>
               </a-alert>
               <a-alert type="info" :message="`批量触发器地址(点击可以复制)`">
-                <template v-slot:description>
+                <template #description>
                   <a-typography-paragraph :copyable="{ tooltip: false, text: temp.batchTriggerUrl }">
                     <a-tag>POST</a-tag> <span>{{ temp.batchTriggerUrl }} </span>
                   </a-typography-paragraph>
@@ -332,20 +344,17 @@ export default {
           title: '创建人',
           dataIndex: 'createUser',
           ellipsis: true,
-          ellipsis: true,
           width: '120px'
         },
         {
           title: '修改人',
           dataIndex: 'modifyUser',
           ellipsis: true,
-          ellipsis: true,
           width: '120px'
         },
         {
           title: '最后操作人',
           dataIndex: 'lastRunUser',
-          ellipsis: true,
           ellipsis: true,
           width: '120px'
         },
@@ -365,6 +374,9 @@ export default {
   computed: {
     pagination() {
       return COMPUTED_PAGINATION(this.listQuery)
+    },
+    activePage() {
+      return this.$attrs.routerUrl === this.$route.path
     }
   },
   mounted() {
@@ -406,32 +418,23 @@ export default {
     },
 
     handleDelete(record) {
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: '真的要删除脚本么？',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            // 组装参数
-            const params = {
-              nodeId: record.nodeId,
-              id: record.scriptId
-            }
-            // 删除
-            deleteScript(params)
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.loadData()
-                }
-                resolve()
+        onOk: () => {
+          return deleteScript({
+            nodeId: record.nodeId,
+            id: record.scriptId
+          }).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.loadData()
+            }
           })
         }
       })
@@ -499,7 +502,6 @@ export default {
         '<li>一般用于服务器无法连接且已经确定不再使用</li>' +
         '<li>如果误操作会产生冗余数据！！！</li>' +
         ' </ul>'
-      const that = this
       $confirm({
         title: '危险操作！！！',
         zIndex: 1009,
@@ -508,22 +510,16 @@ export default {
         cancelButtonProps: { props: { type: 'primary' } },
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            // 解绑
-            unbindScript({
-              id: record.id
-            })
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.loadData()
-                }
-                resolve()
+        onOk: () => {
+          return unbindScript({
+            id: record.id
+          }).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.loadData()
+            }
           })
         }
       })

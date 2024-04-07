@@ -3,18 +3,25 @@
     <a-tabs type="card" default-active-key="1">
       <a-tab-pane key="1" tab="服务端"> <upgrade></upgrade></a-tab-pane>
       <a-tab-pane key="2" tab="所有节点(插件端)">
-        <a-table
+        <CustomTable
+          is-show-tools
+          default-auto-refresh
+          :auto-refresh-time="30"
+          table-name="upgrade-node-list"
+          empty-description="没有节点"
+          :active-page="activePage"
           :columns="columns"
           :data-source="list"
           bordered
           size="middle"
-          rowKey="id"
+          row-key="id"
           :pagination="pagination"
-          @change="changePage"
           :row-selection="rowSelection"
           :scroll="{
             x: 'max-content'
           }"
+          @change="changePage"
+          @refresh="getNodeList"
         >
           <template #title>
             <a-row v-if="percentage">
@@ -22,24 +29,25 @@
             </a-row>
             <a-space>
               <a-input
-                class="search-input-item"
-                @pressEnter="getNodeList"
                 v-model:value="listQuery['%name%']"
+                class="search-input-item"
                 placeholder="节点名称"
+                @press-enter="getNodeList"
               />
               <a-input
-                class="search-input-item"
-                @pressEnter="getNodeList"
                 v-model:value="listQuery['%jpomUrl%']"
+                class="search-input-item"
                 placeholder="节点地址"
+                @press-enter="getNodeList"
               />
               <a-input
-                class="search-input-item"
-                @pressEnter="getNodeList"
                 v-model:value="listQuery['%jpomVersion%']"
+                class="search-input-item"
                 placeholder="插件版本"
+                @press-enter="getNodeList"
               />
               <a-select
+                v-model:value="listQuery.groupName"
                 show-search
                 :filter-option="
                   (input, option) => {
@@ -51,8 +59,7 @@
                     )
                   }
                 "
-                v-model:value="listQuery.groupName"
-                allowClear
+                allow-clear
                 placeholder="分组"
                 class="search-input-item"
               >
@@ -71,25 +78,27 @@
                 accept=".jar,.zip"
                 action=""
                 :disabled="!!percentage"
-                :showUploadList="false"
+                :show-upload-list="false"
                 :multiple="false"
                 :before-upload="beforeUpload"
               >
                 <LoadingOutlined v-if="percentage" />
-                <a-button type="primary" v-else> <UploadOutlined />上传包 </a-button>
+                <a-button v-else type="primary"> <UploadOutlined />上传包 </a-button>
               </a-upload>
-              <a-tooltip :title="`打包时间：${agentTimeStamp || '未知'}`">
-                Agent版本：{{ version_filter(agentVersion) }}
-                <a-tag v-if="temp.upgrade" color="pink" @click="downloadRemoteEvent">
-                  新版本：{{ temp.newVersion }} <DownloadOutlined />
-                </a-tag>
-                <!-- </div> -->
-              </a-tooltip>
 
               <!-- 打包时间：{{ agentTimeStamp | version }}</div> -->
             </a-space>
           </template>
-          <template #bodyCell="{ column, text, record }">
+          <template #toolPrefix>
+            <a-tooltip :title="`打包时间：${agentTimeStamp || '未知'}`">
+              Agent版本：{{ version_filter(agentVersion) }}
+              <a-tag v-if="temp.upgrade" color="pink" @click="downloadRemoteEvent">
+                新版本：{{ temp.newVersion }} <DownloadOutlined />
+              </a-tag>
+              <!-- </div> -->
+            </a-tooltip></template
+          >
+          <template #tableBodyCell="{ column, text, record }">
             <template v-if="column.tooltip">
               <a-tooltip :title="text">
                 <span>{{ text }}</span>
@@ -126,7 +135,7 @@
               <a-button type="primary" size="small" @click="updateNodeHandler(record)">更新</a-button>
             </template>
           </template>
-        </a-table>
+        </CustomTable>
       </a-tab-pane>
     </a-tabs>
   </div>
@@ -143,10 +152,10 @@ import { getWebSocketUrl } from '@/api/config'
 import { uploadPieces } from '@/utils/upload-pieces'
 
 export default {
-  inject: ['globalLoading'],
   components: {
     upgrade
   },
+  inject: ['globalLoading'],
   data() {
     return {
       agentVersion: '',
@@ -241,6 +250,9 @@ export default {
         onChange: this.tableSelectionChange,
         selectedRowKeys: this.tableSelections
       }
+    },
+    activePage() {
+      return this.$attrs.routerUrl === this.$route.path
     },
     socketUrl() {
       return getWebSocketUrl('/socket/node_update', `userId=${this.getLongTermToken()}&nodeId=system&type=nodeUpdate`)
@@ -592,26 +604,20 @@ export default {
         '<li>下载完成后需要手动选择更新到节点才能完成节点更新奥</li>' +
         '<li>如果升级失败需要手动恢复奥</li>' +
         ' </ul>'
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: h('div', null, [h('p', { innerHTML: html }, null)]),
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            downloadRemote()
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({ message: res.msg })
-                  that.getNodeList()
-                } else {
-                  //$notification.error({ message: res.msg });
-                }
-                resolve()
-              })
-              .catch(reject)
+        onOk: () => {
+          return downloadRemote().then((res) => {
+            if (res.code === 200) {
+              $notification.success({ message: res.msg })
+              this.getNodeList()
+            } else {
+              //$notification.error({ message: res.msg });
+            }
           })
         }
       })

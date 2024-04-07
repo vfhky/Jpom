@@ -26,6 +26,7 @@ import org.dromara.jpom.JpomApplication;
 import org.dromara.jpom.common.ILoadEvent;
 import org.dromara.jpom.common.JpomApplicationEvent;
 import org.dromara.jpom.db.*;
+import org.dromara.jpom.dialect.DialectUtil;
 import org.dromara.jpom.model.data.BackupInfoModel;
 import org.dromara.jpom.service.dblog.BackupInfoService;
 import org.dromara.jpom.system.JpomRuntimeException;
@@ -116,9 +117,16 @@ public class InitDb implements DisposableBean, ILoadEvent {
                 return CollUtil.getFirst(list);
             });
             //
-            Resource[] sqlResources = pathMatchingResourcePatternResolver.getResources("classpath*:/sql-view/*.sql");
-            List<Resource> sqlResourceList = Arrays.stream(sqlResources).filter(filter).collect(Collectors.toList());
-            listMap.put("execute", sqlResourceList);
+            {
+                Resource[] sqlResources = pathMatchingResourcePatternResolver.getResources("classpath*:/sql-view/execute.*.sql");
+                List<Resource> sqlResourceList = Arrays.stream(sqlResources).filter(filter).collect(Collectors.toList());
+                listMap.put("execute", sqlResourceList);
+            }
+            {
+                Resource[] sqlResources = pathMatchingResourcePatternResolver.getResources("classpath*:/sql-view/init.*.sql");
+                List<Resource> sqlResourceList = Arrays.stream(sqlResources).filter(filter).collect(Collectors.toList());
+                listMap.put("init", sqlResourceList);
+            }
             //
             for (Map.Entry<String, List<Resource>> entry : listMap.entrySet()) {
                 List<Resource> value = entry.getValue();
@@ -162,14 +170,7 @@ public class InitDb implements DisposableBean, ILoadEvent {
 
 
     private void tryInitSql(DbExtConfig.Mode mode, Map<String, List<Resource>> listMap, Set<String> executeSqlLog, DataSource dataSource, Consumer<String> eachSql) {
-        //
-        Optional.ofNullable(listMap.get("table")).ifPresent(resources -> {
-            for (Resource resource : resources) {
-                String sql = StorageTableFactory.initTable(resource);
-                this.executeSql(sql, resource.getFilename(), mode, executeSqlLog, dataSource, eachSql);
-            }
-        });
-        Optional.ofNullable(listMap.get("execute")).ifPresent(resources -> {
+        Consumer<List<Resource>> consumer = resources -> {
             for (Resource resource : resources) {
                 try (InputStream inputStream = resource.getInputStream()) {
                     String sql = IoUtil.readUtf8(inputStream);
@@ -178,7 +179,18 @@ public class InitDb implements DisposableBean, ILoadEvent {
                     throw Lombok.sneakyThrow(e);
                 }
             }
+        };
+        // 初始化sql
+        Optional.ofNullable(listMap.get("init")).ifPresent(consumer);
+        //
+        Optional.ofNullable(listMap.get("table")).ifPresent(resources -> {
+            for (Resource resource : resources) {
+                String sql = StorageTableFactory.initTable(resource);
+                this.executeSql(sql, resource.getFilename(), mode, executeSqlLog, dataSource, eachSql);
+            }
         });
+        //
+        Optional.ofNullable(listMap.get("execute")).ifPresent(consumer);
         //
         Optional.ofNullable(listMap.get("alter")).ifPresent(resources -> {
             for (Resource resource : resources) {
@@ -203,7 +215,7 @@ public class InitDb implements DisposableBean, ILoadEvent {
         eachSql.accept(name);
         try {
             IStorageSqlBuilderService sqlBuilderService = StorageTableFactory.get();
-            Db.use(dataSource).tx((CheckedUtil.VoidFunc1Rt<Db>) parameter -> {
+            Db.use(dataSource, DialectUtil.getDialectByMode(mode)).tx((CheckedUtil.VoidFunc1Rt<Db>) parameter -> {
                 // 分隔后执行，mysql 不能执行多条 sql 语句
                 List<String> list = StrUtil.isEmpty(sqlBuilderService.delimiter()) ?
                     CollUtil.newArrayList(sql) : StrUtil.splitTrim(sql, sqlBuilderService.delimiter());
@@ -279,11 +291,12 @@ public class InitDb implements DisposableBean, ILoadEvent {
             // 导入数据
             importH2Sql(environment, s);
         });
+
         // 迁移数据
-        Opt.ofNullable(environment.getProperty("h2-migrate-mysql")).ifPresent(s -> {
+        Consumer<DbExtConfig.Mode> migrateOpr = targetMode -> {
             DbExtConfig.Mode mode = dbExtConfig.getMode();
-            if (mode != DbExtConfig.Mode.MYSQL) {
-                throw new JpomRuntimeException(StrUtil.format("当前模式不正确，不能直接迁移到 {}", mode));
+            if (mode != targetMode) {
+                throw new JpomRuntimeException(StrUtil.format("当前模式不正确，不能直接迁移到 {}", targetMode));
             }
             // 都提前清理
             StorageServiceFactory.clearExecuteSqlLog();
@@ -293,10 +306,19 @@ public class InitDb implements DisposableBean, ILoadEvent {
             String pass = environment.getProperty("h2-pass");
             this.addCallback("迁移数据", () -> {
                 //
-                StorageServiceFactory.migrateH2ToNow(dbExtConfig, url, user, pass);
+                StorageServiceFactory.migrateH2ToNow(dbExtConfig, url, user, pass, targetMode);
                 return false;
             });
             log.info("开始等待数据迁移");
+        };
+        Opt.ofNullable(environment.getProperty("h2-migrate-mysql")).ifPresent(s -> {
+            migrateOpr.accept(DbExtConfig.Mode.MYSQL);
+        });
+        Opt.ofNullable(environment.getProperty("h2-migrate-postgresql")).ifPresent(s -> {
+            migrateOpr.accept(DbExtConfig.Mode.POSTGRESQL);
+        });
+        Opt.ofNullable(environment.getProperty("h2-migrate-mariadb")).ifPresent(s -> {
+            migrateOpr.accept(DbExtConfig.Mode.MARIADB);
         });
     }
 

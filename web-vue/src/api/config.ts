@@ -1,3 +1,13 @@
+///
+/// Copyright (c) 2019 Of Him Code Technology Studio
+/// Jpom is licensed under Mulan PSL v2.
+/// You can use this software according to the terms and conditions of the Mulan PSL v2.
+/// You may obtain a copy of Mulan PSL v2 at:
+/// 			http://license.coscl.org.cn/MulanPSL2
+/// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+/// See the Mulan PSL v2 for more details.
+///
+
 import { IResponse } from '@/interface/request'
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { NO_NOTIFY_KEY, TOKEN_HEADER_KEY, CACHE_WORKSPACE_ID } from '@/utils/const'
@@ -53,7 +63,7 @@ const obj2base64 = (obj: any) => {
     return newData
   } else if (obj instanceof FormData) {
     const newFormData: any = new FormData()
-    for (var key of (obj as any).keys()) {
+    for (const key of (obj as any).keys()) {
       const item = obj.get(key)
       if (typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean') {
         newFormData.append(base64Encode(String(key)), base64Encode(String(item)))
@@ -217,7 +227,7 @@ async function request<T = any>(arg: string | AxiosRequestConfig, config?: Axios
 export default request
 
 // 刷新 jwt token 并且重试上次请求
-async function redoRequest(config: AxiosRequestConfig) {
+async function redoRequest() {
   const result = await refreshToken()
   if (result.code === 200) {
     // 调用 store action 存储当前登录的用户名和 token

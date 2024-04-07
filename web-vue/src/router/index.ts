@@ -1,3 +1,13 @@
+///
+/// Copyright (c) 2019 Of Him Code Technology Studio
+/// Jpom is licensed under Mulan PSL v2.
+/// You can use this software according to the terms and conditions of the Mulan PSL v2.
+/// You may obtain a copy of Mulan PSL v2 at:
+/// 			http://license.coscl.org.cn/MulanPSL2
+/// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+/// See the Mulan PSL v2 for more details.
+///
+
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 const children = [
@@ -125,6 +135,11 @@ const children = [
     component: () => import('../pages/tools/cron.vue')
   },
   {
+    path: '/tools/network',
+    name: 'network-tools',
+    component: () => import('../pages/tools/network.vue')
+  },
+  {
     path: '/file-manager/file-storage',
     name: 'file-storage',
     component: () => import('../pages/file-manager/fileStorage/list.vue')
@@ -243,6 +258,14 @@ const management = [
     path: '/system/backup',
     name: 'system-backup',
     component: () => import('../pages/system/backup.vue')
+  },
+  {
+    // Jpom 为开源软件，请基于开源协议用于商业用途
+    // 二次修改不可删除或者修改版权，否则可能承担法律责任
+    // 擅自修改或者删除版权信息有法律风险，请尊重开源协议，不要擅自修改版本信息，否则可能承担法律责任。
+    path: '/about',
+    name: 'about',
+    component: () => import('../pages/layout/about.vue')
   }
 ]
 

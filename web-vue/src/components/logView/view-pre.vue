@@ -1,15 +1,15 @@
 <template>
   <div class="log-view-wrapper force-scrollbar">
     <RecycleScroller
-      class="scroller"
       :id="uniqueId"
+      class="scroller"
       :style="`min-height:${height};height:${height}`"
       key-field="id"
       :items="showList"
       :item-size="itemHeight"
-      :emitUpdate="false"
+      :emit-update="false"
     >
-      <template v-slot="{ index, item }">
+      <template #default="{ index, item }">
         <div class="item">
           <template v-if="!item.warp">
             <span class="linenumber">{{ index + 1 }}</span>
@@ -37,13 +37,16 @@ export default {
   },
   props: {
     height: {
-      String,
+      type: String,
       default: '50vh'
     },
 
-    config: Object,
+    config: {
+      type: Object,
+      default: () => {}
+    },
     id: {
-      String,
+      type: String,
       default: 'logScrollArea'
     }
   },
@@ -245,7 +248,14 @@ export default {
 .scroller {
   height: 100%;
   width: 100%;
-  font-family: Operator Mono, Source Code Pro, Menlo, Monaco, Consolas, Courier New, monospace;
+  font-family:
+    Operator Mono,
+    Source Code Pro,
+    Menlo,
+    Monaco,
+    Consolas,
+    Courier New,
+    monospace;
   position: relative;
   overflow-y: scroll;
 }

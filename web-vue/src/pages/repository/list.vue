@@ -1,11 +1,11 @@
 <template>
   <repository
-    :workspaceId="this.getWorkspaceId()"
+    ref="repository"
+    :workspace-id="getWorkspaceId()"
     :global="true"
     :choose="choose"
-    :chooseVal="chooseVal"
+    :choose-val="chooseVal"
     @confirm="confirm"
-    ref="repository"
   >
   </repository>
 </template>
@@ -15,6 +15,7 @@ import repository from './repository-list.vue'
 import { mapState } from 'pinia'
 import { useAppStore } from '@/stores/app'
 export default {
+  components: { repository },
   props: {
     choose: {
       type: Boolean,
@@ -25,7 +26,7 @@ export default {
       default: ''
     }
   },
-  components: { repository },
+  emits: ['confirm'],
   computed: { ...mapState(useAppStore, ['getWorkspaceId']) },
   methods: {
     confirm(data) {
@@ -34,7 +35,6 @@ export default {
     handerConfirm() {
       this.$refs.repository.handerConfirm()
     }
-  },
-  emits: ['confirm']
+  }
 }
 </script>

@@ -16,13 +16,13 @@
     <parent>
         <artifactId>jpom-parent</artifactId>
         <groupId>org.dromara.jpom</groupId>
-        <version>2.11.3</version>
+        <version>2.11.4</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <name>Jpom Server</name>
     <artifactId>server</artifactId>
-    <version>2.11.3</version>
+    <version>2.11.4</version>
     <properties>
         <start-class>org.dromara.jpom.JpomServerApplication</start-class>
     </properties>
@@ -119,6 +119,18 @@
         <dependency>
             <groupId>org.dromara.jpom.storage-module</groupId>
             <artifactId>storage-module-mysql</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara.jpom.storage-module</groupId>
+            <artifactId>storage-module-postgresql</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dromara.jpom.storage-module</groupId>
+            <artifactId>storage-module-mariadb</artifactId>
             <version>${project.version}</version>
         </dependency>
 

@@ -1,7 +1,7 @@
 <template>
   <div>
     <log-view1 :ref="`logView`" height="calc(100vh - 140px)">
-      <template v-slot:before> <a-button type="primary" size="small" @click="goFile">文件管理</a-button></template>
+      <template #before> <a-button type="primary" size="small" @click="goFile">文件管理</a-button></template>
     </log-view1>
   </div>
 </template>
@@ -20,18 +20,23 @@ export default {
   },
   props: {
     nodeId: {
-      type: String
+      type: String,
+      default: ''
     },
     projectId: {
-      type: String
+      type: String,
+      default: ''
     },
     id: {
-      type: String
+      type: String,
+      default: ''
     },
     readFilePath: {
-      type: String
+      type: String,
+      default: ''
     }
   },
+  emits: ['goFile'],
   data() {
     return {
       project: {},
@@ -42,6 +47,7 @@ export default {
       heart: null
     }
   },
+
   computed: {
     ...mapState(useUserStore, ['getLongTermToken']),
     ...mapState(useAppStore, ['getWorkspaceId']),
@@ -123,8 +129,7 @@ export default {
     goFile() {
       this.$emit('goFile')
     }
-  },
-  emits: ['goFile']
+  }
 }
 </script>
 

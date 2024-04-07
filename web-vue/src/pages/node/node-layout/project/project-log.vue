@@ -7,15 +7,15 @@
         ></a-tag
       >
 
-      <a-tag color="orange" v-if="project.logPath">
+      <a-tag v-if="project.logPath" color="orange">
         控制台日志路径: {{ project.logPath }}
         <template v-if="project.logSize">
           当前日志文件大小：{{ project.logSize }}
-          <a-button @click="handleDownload" type="link" size="small"> <DownloadOutlined />导出 </a-button>
+          <a-button type="link" size="small" @click="handleDownload"> <DownloadOutlined />导出 </a-button>
         </template>
       </a-tag>
 
-      <a-tag color="orange" v-if="project.logBackPath">控制台日志备份路径: {{ project.logBackPath }}</a-tag>
+      <a-tag v-if="project.logBackPath" color="orange">控制台日志备份路径: {{ project.logBackPath }}</a-tag>
 
       <!-- 数据表格 -->
       <a-table
@@ -28,7 +28,7 @@
           x: 'max-content'
         }"
       >
-        <template #bodyCell="{ column, text, record, index }">
+        <template #bodyCell="{ column, text, record }">
           <template v-if="column.dataIndex === 'filename'">
             <a-tooltip placement="topLeft" :title="text">
               <span>{{ text }}</span>
@@ -68,10 +68,12 @@ import { renderSize, parseTime } from '@/utils/const'
 export default {
   props: {
     nodeId: {
-      type: String
+      type: String,
+      default: ''
     },
     projectId: {
-      type: String
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -169,34 +171,25 @@ export default {
     },
     // 删除日志备份文件
     handleDelete(record) {
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: '真的要删除文件么？',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            // 请求参数
-            const params = {
-              nodeId: that.nodeId,
-              id: that.projectId,
+        onOk: () => {
+          return deleteProjectLogBackFile({
+            nodeId: this.nodeId,
+            id: this.projectId,
 
-              name: record.filename
-            }
-            // 删除
-            deleteProjectLogBackFile(params)
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.loadData()
-                }
-                resolve()
+            name: record.filename
+          }).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.loadData()
+            }
           })
         }
       })

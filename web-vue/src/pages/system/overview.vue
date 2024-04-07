@@ -1,9 +1,9 @@
 <template>
   <div>
-    <a-page-header :backIcon="false">
+    <a-page-header :back-icon="false">
       <template #title> 欢迎【{{ getUserInfo.name }}】您来到系统管理中心</template>
       <template #subTitle>当前区域为系统管理、资产管理中心 </template>
-      <template v-slot:tags>
+      <template #tags>
         <a-tag color="blue">
           <template v-if="getUserInfo.demoUser">演示账号</template>
           <template v-else-if="getUserInfo.superSystemUser">超级管理员</template>
@@ -11,14 +11,22 @@
           <template v-else>普通用户</template>
         </a-tag>
       </template>
-      <template v-slot:extra>
-        <a-button @click="init" :loading="loading">
-          <template #icon><ReloadOutlined /></template>
-        </a-button>
+      <template #extra>
+        <a-tooltip title="刷新数据">
+          <a-button :loading="loading" @click="init">
+            <template #icon><ReloadOutlined /></template>
+          </a-button>
+        </a-tooltip>
+        <!-- // 擅自修改或者删除版权信息有法律风险，请尊重开源协议，不要擅自修改版本信息，否则可能承担法律责任。 -->
+        <a-tooltip title="关于系统">
+          <a-button @click="toAbout">
+            <template #icon><ExclamationCircleOutlined /></template>
+          </a-button>
+        </a-tooltip>
       </template>
       <a-space>
-        <span> 工作空间总数： <a-badge color="blue" :count="statData['workspaceCount'] || '0'" showZero /> </span>
-        <span>集群数：<a-badge color="cyan" :count="statData['clusterCount'] || '0'" showZero /></span>
+        <span> 工作空间总数： <a-badge color="blue" :count="statData['workspaceCount'] || '0'" show-zero /> </span>
+        <span>集群数：<a-badge color="cyan" :count="statData['clusterCount'] || '0'" show-zero /></span>
       </a-space>
     </a-page-header>
     <a-divider dashed />
@@ -40,7 +48,7 @@
                       }, 0)) ||
                     '0'
                   "
-                  showZero
+                  show-zero
                 />
               </a-list-item>
               <a-list-item v-else>
@@ -56,7 +64,7 @@
                       }).count) ||
                     '0'
                   "
-                  showZero
+                  show-zero
                 />
               </a-list-item>
             </template>
@@ -79,7 +87,7 @@
                       }, 0)) ||
                     '0'
                   "
-                  showZero
+                  show-zero
                 />
               </a-list-item>
               <a-list-item v-else>
@@ -95,7 +103,7 @@
                       }).count) ||
                     '0'
                   "
-                  showZero
+                  show-zero
                 />
               </a-list-item>
             </template>
@@ -118,7 +126,7 @@
                       }, 0)) ||
                     '0'
                   "
-                  showZero
+                  show-zero
                 />
               </a-list-item>
               <a-list-item v-else>
@@ -134,7 +142,7 @@
                       }).count) ||
                     '0'
                   "
-                  showZero
+                  show-zero
                 />
               </a-list-item>
             </template>
@@ -155,7 +163,7 @@
           >
             <template #renderItem="{ item }">
               <a-list-item>
-                {{ item.name }}：<a-badge :color="item.color" :count="statData[item.field] || '0'" showZero />
+                {{ item.name }}：<a-badge :color="item.color" :count="statData[item.field] || '0'" show-zero />
               </a-list-item>
             </template>
           </a-list>
@@ -177,7 +185,6 @@ import { mapState } from 'pinia'
 import { Empty } from 'ant-design-vue'
 export default {
   components: {},
-  computed: {},
   data() {
     return {
       Empty,
@@ -207,6 +214,11 @@ export default {
         .finally(() => {
           this.loading = false
         })
+    },
+    toAbout() {
+      this.$router.push({
+        path: '/about'
+      })
     }
   }
 }

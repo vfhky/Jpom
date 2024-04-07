@@ -1,3 +1,13 @@
+///
+/// Copyright (c) 2019 Of Him Code Technology Studio
+/// Jpom is licensed under Mulan PSL v2.
+/// You can use this software according to the terms and conditions of the Mulan PSL v2.
+/// You may obtain a copy of Mulan PSL v2 at:
+/// 			http://license.coscl.org.cn/MulanPSL2
+/// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+/// See the Mulan PSL v2 for more details.
+///
+
 import SparkMD5 from 'spark-md5'
 import { concurrentExecution } from '@/utils/const'
 import { generateShardingId } from '@/api/common'
@@ -76,7 +86,7 @@ export const uploadPieces = ({
     const asyncUpdate = function () {
       if (start < total) {
         resolveFileProcess && resolveFileProcess('解析文件,准备上传中 ' + ((start / total) * 100).toFixed(2) + '%')
-        let end = Math.min(start + batch, total)
+        const end = Math.min(start + batch, total)
         reader.readAsArrayBuffer(blobSlice.call(file, start, end))
         start = end
       } else {
@@ -138,9 +148,9 @@ export const uploadPieces = ({
    * 获取每一个分片的详情
    **/
   const getChunkInfo = (file: File, currentChunk: number, chunkSize: number) => {
-    let start: number = currentChunk * chunkSize
-    let end: number = Math.min(file.size, start + chunkSize)
-    let chunk: Blob = blobSlice.call(file, start, end)
+    const start: number = currentChunk * chunkSize
+    const end: number = Math.min(file.size, start + chunkSize)
+    const chunk: Blob = blobSlice.call(file, start, end)
     return <IChunkInfo>{
       start,
       end,

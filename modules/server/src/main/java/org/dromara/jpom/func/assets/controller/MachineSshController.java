@@ -35,6 +35,7 @@ import org.dromara.jpom.common.interceptor.PermissionInterceptor;
 import org.dromara.jpom.common.validator.ValidatorItem;
 import org.dromara.jpom.common.validator.ValidatorRule;
 import org.dromara.jpom.configuration.AssetsConfig;
+import org.dromara.jpom.dialect.DialectUtil;
 import org.dromara.jpom.func.BaseGroupNameController;
 import org.dromara.jpom.func.assets.model.MachineSshModel;
 import org.dromara.jpom.func.assets.server.MachineSshServer;
@@ -196,7 +197,7 @@ public class MachineSshController extends BaseGroupNameController {
         Entity entity = Entity.create();
         entity.set("host", sshModel.getHost());
         entity.set("port", sshModel.getPort());
-        entity.set("`user`", sshModel.getUser());
+        entity.set(DialectUtil.wrapField("user"), sshModel.getUser());
         entity.set("connectType", sshModel.getConnectType());
         Opt.ofBlankAble(id).ifPresent(s -> entity.set("id", StrUtil.format(" <> {}", s)));
         boolean exists = machineSshServer.exists(entity);
@@ -208,8 +209,9 @@ public class MachineSshController extends BaseGroupNameController {
             JschUtil.close(session);
         } catch (Exception e) {
             log.warn("ssh连接失败", e);
-            return new JsonMessage<>(505, "ssh连接失败：" + e.getMessage());
+            return new JsonMessage<>(505, "ssh连接失败,请检查用户名、密码、host、端口等填写是否正确，超时时间是否合理：" + e.getMessage());
         }
+        sshModel.setStatus(1);
         int i = add ? machineSshServer.insert(sshModel) : machineSshServer.updateById(sshModel);
         return JsonMessage.success("操作成功");
     }

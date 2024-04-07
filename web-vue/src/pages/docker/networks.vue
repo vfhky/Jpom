@@ -9,22 +9,22 @@
       x: 'max-content'
     }"
   >
-    <template v-slot:title>
+    <template #title>
       <a-space>
         <a-input
           v-model:value="listQuery['name']"
-          @pressEnter="loadData"
           placeholder="名称"
           class="search-input-item"
+          @press-enter="loadData"
         />
         <a-input
           v-model:value="listQuery['networkId']"
-          @pressEnter="loadData"
           placeholder="id"
           class="search-input-item"
+          @press-enter="loadData"
         />
 
-        <a-button type="primary" @click="loadData" :loading="loading">搜索</a-button>
+        <a-button type="primary" :loading="loading" @click="loadData">搜索</a-button>
       </a-space>
     </template>
     <template #bodyCell="{ column, text, record }">
@@ -38,6 +38,7 @@
           placement="topLeft"
           :title="`${text && text.driver}  ${
             text &&
+            text.config &&
             text.config
               .map((item) => {
                 return ('网关：' + item.gateway || '') + '#' + ('子网掩码：' + item.subnet || '')
@@ -47,6 +48,7 @@
         >
           <span>{{
             text &&
+            text.config &&
             text.config
               .map((item) => {
                 return (item.gateway || '') + '#' + (item.subnet || '')
@@ -88,7 +90,8 @@ export default {
       default: ''
     },
     urlPrefix: {
-      type: String
+      type: String,
+      default: ''
     },
     machineDockerId: {
       type: String,
@@ -109,7 +112,7 @@ export default {
           width: 80,
           ellipsis: true,
           align: 'center',
-          customRender: ({ text, record, index }) => `${index + 1}`
+          customRender: ({ index }) => `${index + 1}`
         },
         {
           title: '名称',
@@ -185,33 +188,26 @@ export default {
       if (!action) {
         return
       }
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: action.msg,
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            // 组装参数
-            const params = {
-              id: that.reqDataId,
+        onOk: () => {
+          return action
+            .api(this.urlPrefix, {
+              id: this.reqDataId,
               volumeName: record.name
-            }
-            action
-              .api(that.urlPrefix, params)
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.loadData()
-                }
-                resolve()
-              })
-              .catch(reject)
-          })
+            })
+            .then((res) => {
+              if (res.code === 200) {
+                $notification.success({
+                  message: res.msg
+                })
+                this.loadData()
+              }
+            })
         }
       })
     }

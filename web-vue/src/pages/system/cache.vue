@@ -19,9 +19,6 @@
             <a-tag color="orange">集群ID:{{ temp.clusterId }}</a-tag>
             <a-tag color="blue">安装ID:{{ temp.installId }}</a-tag>
           </a-descriptions-item>
-          <a-descriptions-item label="服务端时间" :span="1">
-            {{ temp.dateTime }} <a-tag>{{ temp.timeZoneId }}</a-tag>
-          </a-descriptions-item>
           <a-descriptions-item label="数据目录占用空间" :span="1">
             {{ renderSize(temp.dataSize) }} (每天0/12点刷新一次)
             <a-tooltip>
@@ -38,9 +35,9 @@
             <a-space>
               <span>{{ renderSize(temp.cacheFileSize) }} (10分钟刷新一次)</span>
               <a-button
+                v-if="temp.cacheFileSize !== '0'"
                 size="small"
                 type="primary"
-                v-if="temp.cacheFileSize !== '0'"
                 class="btn"
                 @click="clear('serviceCacheFileSize')"
                 >清空</a-button
@@ -60,12 +57,24 @@
               <QuestionCircleOutlined />
             </a-tooltip>
           </a-descriptions-item>
+
+          <a-descriptions-item label="数据目录" :span="1">
+            {{ temp.dataPath }}
+          </a-descriptions-item>
+          <a-descriptions-item label="临时文件目录" :span="1"> {{ temp.tempPath }} </a-descriptions-item>
+          <a-descriptions-item label="在线构建目录">
+            {{ temp.buildPath }}
+          </a-descriptions-item>
+
+          <a-descriptions-item label="服务端时间" :span="1">
+            {{ temp.dateTime }} <a-tag>{{ temp.timeZoneId }}</a-tag>
+          </a-descriptions-item>
           <a-descriptions-item label="旧版程序包占有空间">
             <a-space>
               <span>{{ renderSize(temp.oldJarsSize) }}</span>
               <a-button
-                size="small"
                 v-if="temp.oldJarsSize !== '0'"
+                size="small"
                 type="primary"
                 class="btn"
                 @click="clear('serviceOldJarsSize')"
@@ -82,17 +91,17 @@
                       <a-list-item>
                         {{ item.key }} <a-tag>{{ item.obj }}次</a-tag>
                         <a-tag>过期时间：{{ formatDuration(item.ttl, '') }}</a-tag>
-                      </a-list-item></template
-                    >
+                      </a-list-item>
+                    </template>
                   </a-list>
                 </template>
                 {{ (temp.errorIp && temp.errorIp.length) || 0 }}
                 <UnorderedListOutlined />
               </a-popover>
               <a-button
+                v-if="temp.errorIp && temp.errorIp.length"
                 size="small"
                 type="primary"
-                v-if="temp.errorIp && temp.errorIp.length"
                 class="btn"
                 @click="clear('serviceIpSize')"
                 >清空</a-button
@@ -130,7 +139,7 @@
             <a-popover title="错误的工作空间数据">
               <template #content>
                 <a-collapse>
-                  <a-collapse-panel :header="key" v-for="(item, key) in temp.errorWorkspace" :key="key">
+                  <a-collapse-panel v-for="(item, key) in temp.errorWorkspace" :key="key" :header="key">
                     <p v-for="(item2, index) in item" :key="index">{{ item2 }}</p>
                     <template #extra>
                       <DeleteOutlined
@@ -157,7 +166,7 @@
         </a-timeline> -->
       </a-tab-pane>
       <a-tab-pane key="2" tab="运行中的定时任务" force-render>
-        <task-stat :taskList="taskList" @refresh="loadData" />
+        <task-stat :task-list="taskList" @refresh="loadData" />
       </a-tab-pane>
       <a-tab-pane key="3" tab="触发器管理">
         <TriggerToken />
@@ -226,27 +235,21 @@ export default {
     handleClearErrorWorkspaceClick(event, tableName) {
       // If you don't want click extra trigger collapse, you can prevent this:
       event.stopPropagation()
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: '真的要删除' + tableName + '表中的错误数据吗？',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            clearErrorWorkspace({ tableName })
-              .then((res) => {
-                if (res.code === 200) {
-                  // 成功
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.loadData()
-                }
-                resolve()
+        onOk: () => {
+          return clearErrorWorkspace({ tableName }).then((res) => {
+            if (res.code === 200) {
+              // 成功
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.loadData()
+            }
           })
         }
       })

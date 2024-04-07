@@ -1,29 +1,37 @@
 <template>
   <div class="">
     <!-- 数据表格 -->
-    <a-table
+    <CustomTable
+      is-show-tools
+      default-auto-refresh
+      :auto-refresh-time="30"
+      :active-page="activePage"
+      table-name="build-history-list"
+      empty-description="没有任何构建历史"
       :data-source="list"
       size="middle"
       :columns="columns"
       :pagination="pagination"
       bordered
-      rowKey="id"
-      @change="change"
+      row-key="id"
       :row-selection="rowSelection"
       :scroll="{
         x: 'max-content'
       }"
+      @change="change"
+      @refresh="loadData"
     >
-      <template v-slot:title>
+      <template #title>
         <a-space wrap class="search-box">
           <a-input
-            allowClear
-            class="search-input-item"
-            @pressEnter="loadData"
             v-model:value="listQuery['%buildName%']"
+            allow-clear
+            class="search-input-item"
             placeholder="构建名称"
+            @press-enter="loadData"
           />
           <a-select
+            v-model:value="listQuery.status"
             show-search
             :filter-option="
               (input, option) => {
@@ -35,14 +43,14 @@
                 )
               }
             "
-            v-model:value="listQuery.status"
-            allowClear
+            allow-clear
             placeholder="请选择状态"
             class="search-input-item"
           >
             <a-select-option v-for="(val, key) in statusMap" :key="key">{{ val }}</a-select-option>
           </a-select>
           <a-select
+            v-model:value="listQuery.triggerBuildType"
             show-search
             :filter-option="
               (input, option) => {
@@ -54,8 +62,7 @@
                 )
               }
             "
-            v-model:value="listQuery.triggerBuildType"
-            allowClear
+            allow-clear
             placeholder="请选择触发类型"
             class="search-input-item"
           >
@@ -73,17 +80,19 @@
           >
             批量删除
           </a-button>
-          <a-tooltip>
-            <template v-slot:title>
-              <div>构建历史是用于记录每次构建的信息,可以保留构建产物信息,构建日志。同时还可以快速回滚发布</div>
-              <div>如果不需要保留较多构建历史信息可以到服务端修改构建相关配置参数</div>
-              <div>构建历史可能占有较多硬盘空间,建议根据实际情况配置保留个数</div>
-            </template>
-            <QuestionCircleOutlined />
-          </a-tooltip>
         </a-space>
       </template>
-      <template #bodyCell="{ column, text, record, index }">
+      <template #tableHelp>
+        <a-tooltip>
+          <template #title>
+            <div>构建历史是用于记录每次构建的信息,可以保留构建产物信息,构建日志。同时还可以快速回滚发布</div>
+            <div>如果不需要保留较多构建历史信息可以到服务端修改构建相关配置参数</div>
+            <div>构建历史可能占有较多硬盘空间,建议根据实际情况配置保留个数</div>
+          </template>
+          <QuestionCircleOutlined />
+        </a-tooltip>
+      </template>
+      <template #tableBodyCell="{ column, text, record }">
         <template v-if="column.tooltip">
           <a-tooltip :title="text">
             <span>{{ text || '' }}</span>
@@ -159,7 +168,7 @@
                 更多
                 <DownOutlined />
               </a>
-              <template v-slot:overlay>
+              <template #overlay>
                 <a-menu>
                   <a-menu-item>
                     <template v-if="record.releaseMethod !== 5">
@@ -187,7 +196,7 @@
           </a-space>
         </template>
       </template>
-    </a-table>
+    </CustomTable>
     <!-- 构建日志 -->
     <build-log
       v-if="buildLogVisible > 0"
@@ -267,6 +276,7 @@ export default {
       default: ''
     }
   },
+  emits: ['cancel', 'confirm'],
   data() {
     return {
       releaseMethodMap,
@@ -374,6 +384,9 @@ export default {
     pagination() {
       return COMPUTED_PAGINATION(this.listQuery)
     },
+    activePage() {
+      return this.$attrs.routerUrl === this.$route.path
+    },
     rowSelection() {
       return {
         onChange: this.tableSelectionChange,
@@ -431,60 +444,47 @@ export default {
 
     // 回滚
     handleRollback(record) {
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: '真的要回滚该构建历史记录么？',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
+        onOk: () => {
           // 重新发布
-          return await new Promise((resolve, reject) => {
-            rollback(record.id)
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.loadData()
-                  // 弹窗
-                  that.temp = {
-                    id: record.buildDataId,
-                    buildId: res.data
-                  }
-                  that.buildLogVisible = new Date() * Math.random()
-                }
-                resolve()
+          return rollback(record.id).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.loadData()
+              // 弹窗
+              this.temp = {
+                id: record.buildDataId,
+                buildId: res.data
+              }
+              this.buildLogVisible = new Date() * Math.random()
+            }
           })
         }
       })
     },
     // 删除
     handleDelete(record) {
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: '真的要删除构建历史记录么？',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          // 删除
-          return await new Promise((resolve, reject) => {
-            deleteBuildHistory(record.id)
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.loadData()
-                }
-                resolve()
+        onOk: () => {
+          return deleteBuildHistory(record.id).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.loadData()
+            }
           })
         }
       })
@@ -497,28 +497,22 @@ export default {
         })
         return
       }
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: '真的要删除这些构建历史记录么？',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
+        onOk: () => {
           // 删除
-          return await new Promise((resolve, reject) => {
-            deleteBuildHistory(that.tableSelections.join(','))
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.tableSelections = []
-                  that.loadData()
-                }
-                resolve()
+          return deleteBuildHistory(this.tableSelections.join(',')).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.tableSelections = []
+              this.loadData()
+            }
           })
         }
       })
@@ -565,7 +559,6 @@ export default {
       }
       this.$emit('confirm', selectData)
     }
-  },
-  emits: ['cancel', 'confirm']
+  }
 }
 </script>

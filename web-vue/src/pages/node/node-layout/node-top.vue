@@ -3,6 +3,7 @@
     <div ref="filter" class="filter">
       <a-space>
         <a-range-picker
+          v-model:value="timeRange"
           :presets="[
             { label: '今天', value: [dayjs().startOf('day'), dayjs()] },
             { label: '昨天', value: [dayjs().add(-1, 'days').startOf('day'), dayjs().add(-1, 'days').endOf('day')] }
@@ -13,14 +14,13 @@
             }
           "
           class="filter-item"
-          v-model:value="timeRange"
           :show-time="{ format: 'HH:mm:ss' }"
           format="YYYY-MM-DD HH:mm:ss"
-          valueFormat="YYYY-MM-DD HH:mm:ss"
+          value-format="YYYY-MM-DD HH:mm:ss"
         />
         <a-button type="primary" @click="handleFilter">搜索</a-button>
         <a-tooltip>
-          <template v-slot:title>
+          <template #title>
             <div>
               <ul>
                 <li>
@@ -66,13 +66,16 @@ export default {
   components: {},
   props: {
     nodeId: {
-      type: String
+      type: String,
+      default: ''
     },
     machineId: {
-      type: String
+      type: String,
+      default: ''
     },
     type: {
-      type: String
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -87,6 +90,7 @@ export default {
   computed: {
     ...mapState(useGuideStore, ['getThemeView'])
   },
+  watch: {},
   mounted() {
     this.handleFilter()
     window.addEventListener('resize', this.resize)
@@ -94,15 +98,21 @@ export default {
   unmounted() {
     window.removeEventListener('resize', this.resize)
   },
-  watch: {},
   methods: {
     dayjs,
     // 刷新
     handleFilter() {
       const params = {
         nodeId: this.nodeId,
-        machineId: this.machineId,
-        time: this.timeRange
+        machineId: this.machineId
+        // time: this.timeRange
+      }
+      if (this.timeRange && this.timeRange[0]) {
+        params.startTime = this.timeRange[0]
+        params.endTime = this.timeRange[1]
+      } else {
+        params.startTime = ''
+        params.endTime = ''
       }
       // 加载数据
       nodeMonitorData(params)

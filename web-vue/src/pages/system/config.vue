@@ -1,7 +1,7 @@
 <template>
   <a-tabs default-active-key="1" @change="tabChange">
     <a-tab-pane key="1">
-      <template v-slot:tab>
+      <template #tab>
         <span>
           <SettingOutlined />
           服务端系统配置
@@ -12,13 +12,13 @@
         <a-form-item>
           <code-editor
             v-model:content="temp.content"
-            fileSuffix="conf.yml"
+            file-suffix="conf.yml"
             :options="{ mode: 'yaml', tabSize: 2 }"
-            :showTool="true"
+            :show-tool="true"
             height="calc(100vh - 200px)"
           >
             <template #tool_before>
-              <a-alert show-icon v-if="temp.file" :message="`配置文件路径:${temp.file}`" />
+              <a-alert v-if="temp.file" show-icon :message="`配置文件路径:${temp.file}`" />
             </template>
           </code-editor>
         </a-form-item>
@@ -49,8 +49,8 @@
         banner
       />
       <a-form
-        style="margin-top: 10px"
         ref="editIpConfigForm"
+        style="margin-top: 10px"
         :model="ipTemp"
         :label-col="{ span: 2 }"
         :wrapper-col="{ span: 20 }"
@@ -76,7 +76,7 @@
           <template #label>
             <a-space align="center">
               <a-tooltip>
-                <template v-slot:title> 只允许访问的 IP 地址 </template>
+                <template #title> 只允许访问的 IP 地址 </template>
                 <CheckCircleFilled />
                 IP授权
               </a-tooltip>
@@ -98,7 +98,7 @@
 
     <!-- 全局代理 -->
     <a-tab-pane key="6">
-      <template v-slot:tab>
+      <template #tab>
         <span>
           <ApiOutlined />
           全局代理
@@ -115,16 +115,16 @@
             <a-space>
               <a-form-item label="通配符" name="pattern">
                 <a-input
-                  style="width: 30vw"
-                  :maxLength="200"
                   v-model:value="item.pattern"
+                  style="width: 30vw"
+                  :max-length="200"
                   placeholder="地址通配符,* 表示所有地址都将使用代理"
                 >
                 </a-input>
               </a-form-item>
               <a-form-item label="代理">
-                <a-input style="width: 30vw" v-model:value="item.proxyAddress" placeholder="代理地址 (127.0.0.1:8888)">
-                  <template v-slot:addonBefore>
+                <a-input v-model:value="item.proxyAddress" style="width: 30vw" placeholder="代理地址 (127.0.0.1:8888)">
+                  <template #addonBefore>
                     <a-select v-model:value="item.proxyType" style="width: 100px">
                       <a-select-option value="HTTP">HTTP</a-select-option>
                       <a-select-option value="SOCKS">SOCKS</a-select-option>
@@ -137,13 +137,13 @@
                 <a-button
                   type="primary"
                   danger
+                  size="small"
+                  :disabled="proxyConfigData.globalProxy && proxyConfigData.globalProxy.length <= 1"
                   @click="
                     () => {
                       proxyConfigData.globalProxy && proxyConfigData.globalProxy.splice(index, 1)
                     }
                   "
-                  size="small"
-                  :disabled="proxyConfigData.globalProxy && proxyConfigData.globalProxy.length <= 1"
                 >
                   删除
                 </a-button>
@@ -193,10 +193,10 @@ import codeEditor from '@/components/codeEditor'
 import { RESTART_UPGRADE_WAIT_TIME_COUNT } from '@/utils/const'
 
 export default {
-  inject: ['globalLoading'],
   components: {
     codeEditor
   },
+  inject: ['globalLoading'],
   data() {
     return {
       temp: {
@@ -244,31 +244,24 @@ export default {
 
     // submit
     onSubmit(restart) {
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: '真的要保存当前配置吗？如果配置有误,可能无法启动服务需要手动还原奥！！！',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            that.temp.restart = restart
-            editConfig(that.temp)
-              .then((res) => {
-                if (res.code === 200) {
-                  // 成功
-                  $notification.success({
-                    message: res.msg
-                  })
-                  if (that.temp.restart) {
-                    that.startCheckRestartStatus(res.msg)
-                  }
-                  //
-                }
-                resolve()
+        onOk: () => {
+          this.temp.restart = restart
+          return editConfig(this.temp).then((res) => {
+            if (res.code === 200) {
+              // 成功
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              if (this.temp.restart) {
+                this.startCheckRestartStatus(res.msg)
+              }
+            }
           })
         }
       })
@@ -327,7 +320,6 @@ export default {
     },
     // submit ip config
     onSubmitIp() {
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
@@ -335,19 +327,14 @@ export default {
           '真的要保存当前配置吗？IP 授权请慎重配置奥( 授权是指只允许访问的 IP ),配置后立马生效 如果配置错误将出现无法访问的情况,需要手动恢复奥！！！',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            editIpConfig(that.ipTemp)
-              .then((res) => {
-                if (res.code === 200) {
-                  // 成功
-                  $notification.success({
-                    message: res.msg
-                  })
-                }
-                resolve()
+        onOk: () => {
+          return editIpConfig(this.ipTemp).then((res) => {
+            if (res.code === 200) {
+              // 成功
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+            }
           })
         }
       })

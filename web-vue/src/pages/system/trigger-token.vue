@@ -6,30 +6,30 @@
       :loading="viewOperationLoading"
       :columns="viewOperationLogColumns"
       :pagination="viewOperationLogPagination"
-      @change="changeListLog"
       bordered
       size="middle"
       :scroll="{
         x: 'max-content'
       }"
+      @change="changeListLog"
     >
-      <template v-slot:title>
+      <template #title>
         <a-space wrap class="search-box">
           <a-input
-            class="search-input-item"
-            @pressEnter="handleListLog"
             v-model:value="viewOperationLogListQuery['userId']"
+            class="search-input-item"
             placeholder="创建人,全匹配"
+            @press-enter="handleListLog"
           />
           <a-input
-            class="search-input-item"
-            @pressEnter="handleListLog"
             v-model:value="viewOperationLogListQuery['triggerToken']"
+            class="search-input-item"
             placeholder="token,全匹配"
+            @press-enter="handleListLog"
           />
           <a-select
             v-model:value="viewOperationLogListQuery.type"
-            allowClear
+            allow-clear
             placeholder="类型"
             class="search-input-item"
           >
@@ -72,17 +72,11 @@
 </template>
 
 <script>
-import { getSshOperationLogList } from '@/api/ssh'
 import { CHANGE_PAGE, COMPUTED_PAGINATION, PAGE_DEFAULT_LIST_QUERY, parseTime } from '@/utils/const'
 import { triggerTokenList, triggerTokenAllType, triggerTokenDelete } from '@/api/trigger-token'
 export default {
   components: {},
   props: {},
-  computed: {
-    viewOperationLogPagination() {
-      return COMPUTED_PAGINATION(this.viewOperationLogListQuery)
-    }
-  },
 
   data() {
     return {
@@ -142,6 +136,11 @@ export default {
       allTypeList: []
     }
   },
+  computed: {
+    viewOperationLogPagination() {
+      return COMPUTED_PAGINATION(this.viewOperationLogListQuery)
+    }
+  },
   created() {
     triggerTokenAllType().then((res) => {
       if (res.code === 200) {
@@ -177,29 +176,22 @@ export default {
     },
     // 删除
     handleDelete(record) {
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: '真的要删除对应的触发器吗？',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            // 删除
-            triggerTokenDelete({
-              id: record.id
-            })
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.handleListLog()
-                }
-                resolve()
+        onOk: () => {
+          return triggerTokenDelete({
+            id: record.id
+          }).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.handleListLog()
+            }
           })
         }
       })

@@ -1,19 +1,70 @@
 <template>
   <div>
     <!-- 表格 -->
-    <a-card :bodyStyle="{ padding: '10px' }">
-      <template v-slot:title>
+    <!-- <a-card :body-style="{ padding: '10px' }"> -->
+
+    <!-- <template v-if="layoutType === 'card'">
+      <template v-if="list && list.length">
+        <a-row :gutter="[16, 16]">
+          <a-col v-for="item in list" :key="item.id" :span="6"> </a-col>
+        </a-row>
+      </template>
+      <template v-else>
+        <a-empty :image="Empty.PRESENTED_IMAGE_SIMPLE" description="没有任何构建" />
+      </template>
+    </template> -->
+    <!-- <template v-else-if="layoutType === 'table'"> -->
+    <CustomTable
+      is-show-tools
+      default-auto-refresh
+      :auto-refresh-time="5"
+      table-name="buildList"
+      empty-description="没有任何构建"
+      :active-page="activePage"
+      :layout="layout"
+      size="middle"
+      :columns="columns"
+      :data-source="list"
+      bordered
+      row-key="id"
+      :pagination="pagination"
+      :scroll="{
+        x: 'max-content'
+      }"
+      :row-selection="rowSelection"
+      @change="
+        (pagination, filters, sorter) => {
+          listQuery = CHANGE_PAGE(listQuery, {
+            pagination,
+            sorter
+          })
+          loadData()
+        }
+      "
+      @refresh="loadData"
+      @change-table-layout="
+        (layoutType) => {
+          tableSelections = []
+          listQuery = CHANGE_PAGE(listQuery, {
+            pagination: { limit: layoutType === 'card' ? 8 : 10 }
+          })
+          loadData()
+        }
+      "
+    >
+      <template #title>
         <a-space wrap class="search-box">
           <a-input
-            allowClear
-            class="search-input-item"
-            @pressEnter="loadData"
             v-model:value="listQuery['%name%']"
+            allow-clear
+            class="search-input-item"
             placeholder="构建名称"
+            @press-enter="loadData"
           />
           <a-select
+            v-model:value="listQuery.status"
             show-search
-            allowClear
+            allow-clear
             :filter-option="
               (input, option) => {
                 const children = option.children && option.children()
@@ -24,13 +75,13 @@
                 )
               }
             "
-            v-model:value="listQuery.status"
             placeholder="状态"
             class="search-input-item"
           >
             <a-select-option v-for="(val, key) in statusMap" :key="key">{{ val }}</a-select-option>
           </a-select>
           <a-select
+            v-model:value="listQuery.releaseMethod"
             show-search
             :filter-option="
               (input, option) => {
@@ -42,14 +93,14 @@
                 )
               }
             "
-            v-model:value="listQuery.releaseMethod"
-            allowClear
+            allow-clear
             placeholder="发布方式"
             class="search-input-item"
           >
             <a-select-option v-for="(val, key) in releaseMethodMap" :key="key">{{ val }}</a-select-option>
           </a-select>
           <a-select
+            v-model:value="listQuery.group"
             show-search
             :filter-option="
               (input, option) => {
@@ -61,30 +112,26 @@
                 )
               }
             "
-            v-model:value="listQuery.group"
-            allowClear
+            allow-clear
             placeholder="分组"
             class="search-input-item"
           >
             <a-select-option v-for="item in groupList" :key="item">{{ item }}</a-select-option>
           </a-select>
           <a-input
-            allowClear
-            class="search-input-item"
-            @pressEnter="loadData"
             v-model:value="listQuery['%resultDirFile%']"
+            allow-clear
+            class="search-input-item"
             placeholder="产物目录"
+            @press-enter="loadData"
           />
           <a-tooltip title="按住 Ctr 或者 Alt/Option 键点击按钮快速回到第一页">
             <a-button type="primary" :loading="loading" @click="loadData">搜索</a-button>
           </a-tooltip>
           <a-button type="primary" @click="handleAdd">新增</a-button>
-          <template v-if="this.layoutType === 'table'">
-            <template v-if="!tableSelections || tableSelections.length <= 0">
-              <a-button type="primary" :disabled="true"> 操作 <DownOutlined /> </a-button>
-            </template>
-            <a-dropdown v-else>
-              <template v-slot:overlay>
+          <template v-if="tableSelections && tableSelections.length">
+            <a-dropdown>
+              <template #overlay>
                 <a-menu>
                   <a-menu-item key="1" @click="batchBuild"> 批量构建 </a-menu-item>
                   <a-menu-item key="2" @click="batchCancel"> 批量取消 </a-menu-item>
@@ -95,15 +142,15 @@
             </a-dropdown>
           </template>
           <a-tooltip v-else title="表格视图才能使用批量操作功能">
-            <a-button :disabled="true" type="primary"> 操作 <DownOutlined /> </a-button>
+            <a-button :disabled="true" type="primary"> 批量操作 <DownOutlined /> </a-button>
           </a-tooltip>
 
-          <a-button v-if="!layout" type="primary" @click="changeLayout">
+          <!-- <a-button v-if="!layout" type="primary" @click="changeLayout">
             <template #icon>
               <LayoutOutlined v-if="layoutType === 'card'" />
               <TableOutlined v-else />
             </template>
-            {{ this.layoutType === 'card' ? '卡片' : '表格' }}
+            {{ layoutType === 'card' ? '卡片' : '表格' }}
           </a-button>
 
           <a-statistic-countdown
@@ -113,426 +160,394 @@
             :value="countdownTime"
             @finish="silenceLoadData"
           />
+          -->
         </a-space>
       </template>
-      <template v-if="this.layoutType === 'card'">
-        <template v-if="list && list.length">
-          <a-row :gutter="[16, 16]">
-            <a-col v-for="item in list" :key="item.id" :span="6">
-              <a-card :headStyle="{ padding: '0 6px' }" :bodyStyle="{ padding: '10px' }">
-                <template v-slot:title>
-                  <a-row :gutter="[4, 0]">
-                    <a-col :span="17" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">
-                      <a-button type="link" style="padding: 0" size="small" @click="handleDetails(item)">
-                        <span> {{ item.name }}</span>
+      <template #cardBodyCell="{ item }">
+        <a-card :head-style="{ padding: '0 6px' }" :body-style="{ padding: '10px' }">
+          <template #title>
+            <a-row :gutter="[4, 0]">
+              <a-col :span="17" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">
+                <a-button type="link" style="padding: 0" size="small" @click="handleDetails(item)">
+                  <span> {{ item.name }}</span>
+                </a-button>
+              </a-col>
+              <a-col :span="7" style="text-align: right" class="text-overflow-hidden">
+                <a-tooltip
+                  :title="`当前状态：${statusMap[item.status]} ${item.statusMsg ? '状态消息：' + item.statusMsg : ''} `"
+                >
+                  <a-tag :color="statusColor[item.status]" style="margin-right: 0">
+                    {{ statusMap[item.status] || '未知状态' }}</a-tag
+                  >
+                </a-tooltip>
+              </a-col>
+            </a-row>
+          </template>
+
+          <a-tooltip>
+            <template #title>
+              <div v-if="item.branchTagName">
+                <div>标签名称：{{ item.branchTagName }}</div>
+                <div>上次构建基于 commitId：{{ item.repositoryLastCommitId }}</div>
+              </div>
+              <div v-else>
+                <div>分支名称：{{ item.branchName }}</div>
+                <div>上次构建基于 commitId：{{ item.repositoryLastCommitId }}</div>
+              </div>
+            </template>
+
+            <a-row class="item-info">
+              <a-col :span="6" class="title text-overflow-hidden">分组/标签:</a-col>
+              <a-col :span="18" class="content text-overflow-hidden">
+                {{ item.branchName }} {{ item.branchTagName }}</a-col
+              >
+            </a-row>
+          </a-tooltip>
+          <a-tooltip :title="item.resultDirFile">
+            <a-row class="item-info">
+              <a-col :span="6" class="title text-overflow-hidden">产物:</a-col>
+              <a-col :span="18" class="content text-overflow-hidden">
+                {{ item.resultDirFile }}
+              </a-col>
+            </a-row>
+          </a-tooltip>
+
+          <a-row class="item-info">
+            <a-col :span="6" class="title text-overflow-hidden">构建ID:</a-col>
+            <a-col :span="18" class="content text-overflow-hidden">
+              <a-tag v-if="item.buildId <= 0">-</a-tag>
+              <a-tag v-else color="#108ee9" @click="handleBuildLog(item)">#{{ item.buildId }}</a-tag>
+            </a-col>
+          </a-row>
+
+          <a-row class="item-info">
+            <a-col :span="6" class="title text-overflow-hidden">构建方式:</a-col>
+            <a-col :span="18" class="content text-overflow-hidden">
+              <template v-if="item.buildMode === 1">
+                <CloudOutlined />
+                容器构建
+              </template>
+              <template v-else>
+                <CodeOutlined />
+                本地构建
+              </template>
+            </a-col>
+          </a-row>
+          <a-row class="item-info">
+            <a-col :span="6" class="title text-overflow-hidden">发布方式:</a-col>
+            <a-col :span="18" class="content text-overflow-hidden">
+              {{ releaseMethodMap[item.releaseMethod] }}
+            </a-col>
+          </a-row>
+
+          <a-row type="flex" align="middle" justify="center" style="margin-top: 10px">
+            <a-button-group>
+              <a-button
+                v-if="item.status === 1 || item.status === 4 || item.status === 9"
+                size="small"
+                type="primary"
+                danger
+                @click="handleStopBuild(item)"
+                >停止
+              </a-button>
+              <a-dropdown v-else>
+                <a-button size="small" type="primary" @click="handleConfirmStartBuild(item)">
+                  构建
+                  <DownOutlined />
+                </a-button>
+                <template #overlay>
+                  <a-menu>
+                    <a-menu-item key="1">
+                      <a-button
+                        size="small"
+                        type="primary"
+                        @click="reqStartBuild({ id: item.id, buildEnvParameter: item.buildEnvParameter }, true)"
+                        >直接构建
                       </a-button>
-                    </a-col>
-                    <a-col :span="7" style="text-align: right" class="text-overflow-hidden">
-                      <a-tooltip
-                        :title="`当前状态：${statusMap[item.status]} ${
-                          item.statusMsg ? '状态消息：' + item.statusMsg : ''
-                        } `"
+                    </a-menu-item>
+                    <a-menu-item key="2">
+                      <a-button
+                        size="small"
+                        type="primary"
+                        @click="reqStartBuild({ id: item.id, buildEnvParameter: item.buildEnvParameter }, false)"
                       >
-                        <a-tag :color="statusColor[item.status]" style="margin-right: 0">
-                          {{ statusMap[item.status] || '未知状态' }}</a-tag
-                        >
-                      </a-tooltip>
-                    </a-col>
-                  </a-row>
+                        后台构建
+                      </a-button>
+                    </a-menu-item>
+                  </a-menu>
                 </template>
+              </a-dropdown>
+              <a-dropdown>
+                <a-button size="small" type="primary" @click="handleEdit(item)">编辑</a-button>
+                <template #overlay>
+                  <a-menu>
+                    <a-menu-item @click="handleEdit(item, 0)">
+                      <a href="javascript:;">构建方式</a>
+                    </a-menu-item>
+                    <a-menu-item @click="handleEdit(item, 1)">
+                      <a href="javascript:;">基础信息</a>
+                    </a-menu-item>
+                    <a-menu-item @click="handleEdit(item, 2)">
+                      <a href="javascript:;">构建流程</a>
+                    </a-menu-item>
+                    <a-menu-item @click="handleEdit(item, 3)">
+                      <a href="javascript:;">发布操作</a>
+                    </a-menu-item>
+                    <a-menu-item @click="handleEdit(item, 4)">
+                      <a href="javascript:;">其他配置</a>
+                    </a-menu-item>
+                  </a-menu>
+                </template>
+              </a-dropdown>
+              <a-button size="small" @click="handleDelete(item)">删除</a-button>
+              <a-tooltip
+                placement="leftBottom"
+                title="清除代码(仓库目录)为删除服务器中存储仓库目录里面的所有东西,删除后下次构建将重新拉起仓库里面的文件,一般用于解决服务器中文件和远程仓库中文件有冲突时候使用。执行时间取决于源码目录大小和文件数量如超时请耐心等待，或稍后重试"
+              >
+                <a-button size="small" :disabled="!item.sourceDirExist" @click="handleClear(item)">清除代码 </a-button>
+              </a-tooltip>
+            </a-button-group>
+          </a-row>
+        </a-card>
+      </template>
+      <template #tableBodyCell="{ column, text, record, index }">
+        <template v-if="column.dataIndex === 'name'">
+          <a-tooltip placement="topLeft" :title="`名称：${text} 点击查看详情`" @click="handleDetails(record)">
+            <a-button type="link" style="padding: 0" size="small"> <FullscreenOutlined />{{ text }}</a-button>
+          </a-tooltip>
+        </template>
+        <template v-else-if="column.dataIndex === 'branchName'">
+          <a-tooltip placement="topLeft">
+            <template #title>
+              <div v-if="record.branchTagName">
+                <div>标签名称：{{ record.branchTagName }}</div>
+                <div>上次构建基于 commitId：{{ record.repositoryLastCommitId }}</div>
+              </div>
+              <div v-else>
+                <div>分支名称：{{ text }}</div>
+                <div>上次构建基于 commitId：{{ record.repositoryLastCommitId }}</div>
+              </div>
+            </template>
+            <span v-if="record.branchTagName"><TagOutlined />{{ record.branchTagName }}</span>
+            <span v-else>{{ text }}</span>
+          </a-tooltip>
+        </template>
 
-                <a-tooltip>
-                  <template v-slot:title>
-                    <div v-if="item.branchTagName">
-                      <div>标签名称：{{ item.branchTagName }}</div>
-                      <div>上次构建基于 commitId：{{ item.repositoryLastCommitId }}</div>
-                    </div>
-                    <div v-else>
-                      <div>分支名称：{{ item.branchName }}</div>
-                      <div>上次构建基于 commitId：{{ item.repositoryLastCommitId }}</div>
-                    </div>
-                  </template>
-
-                  <a-row class="item-info">
-                    <a-col :span="6" class="title text-overflow-hidden">分组/标签:</a-col>
-                    <a-col :span="18" class="content text-overflow-hidden">
-                      {{ item.branchName }} {{ item.branchTagName }}</a-col
-                    >
-                  </a-row>
-                </a-tooltip>
-                <a-tooltip :title="item.resultDirFile">
-                  <a-row class="item-info">
-                    <a-col :span="6" class="title text-overflow-hidden">产物:</a-col>
-                    <a-col :span="18" class="content text-overflow-hidden">
-                      {{ item.resultDirFile }}
-                    </a-col>
-                  </a-row>
-                </a-tooltip>
-
-                <a-row class="item-info">
-                  <a-col :span="6" class="title text-overflow-hidden">构建ID:</a-col>
-                  <a-col :span="18" class="content text-overflow-hidden">
-                    <a-tag v-if="item.buildId <= 0">-</a-tag>
-                    <a-tag v-else color="#108ee9" @click="handleBuildLog(item)">#{{ item.buildId }}</a-tag>
-                  </a-col>
-                </a-row>
-
-                <a-row class="item-info">
-                  <a-col :span="6" class="title text-overflow-hidden">构建方式:</a-col>
-                  <a-col :span="18" class="content text-overflow-hidden">
-                    <template v-if="item.buildMode === 1">
-                      <CloudOutlined />
-                      容器构建
-                    </template>
-                    <template v-else>
-                      <CodeOutlined />
-                      本地构建
-                    </template>
-                  </a-col>
-                </a-row>
-                <a-row class="item-info">
-                  <a-col :span="6" class="title text-overflow-hidden">发布方式:</a-col>
-                  <a-col :span="18" class="content text-overflow-hidden">
-                    {{ releaseMethodMap[item.releaseMethod] }}
-                  </a-col>
-                </a-row>
-
-                <a-row type="flex" align="middle" justify="center" style="margin-top: 10px">
-                  <a-button-group>
+        <template v-else-if="column.dataIndex === 'buildMode'">
+          <a-tooltip placement="topLeft" :title="text === 1 ? '容器构建' : '本地构建'">
+            <CloudOutlined v-if="text === 1" />
+            <CodeOutlined v-else />
+          </a-tooltip>
+        </template>
+        <template v-else-if="column.dataIndex === 'releaseMethod'">
+          <a-tooltip>
+            <template #title>
+              <ul>
+                <li>发布方式：{{ releaseMethodMap[text] }}</li>
+                <li>产物目录：{{ record.resultDirFile }}</li>
+                <li v-if="record.buildMode !== 1">构建命令：{{ record.script }}</li>
+              </ul>
+            </template>
+            <span>{{ releaseMethodMap[text] }}</span>
+          </a-tooltip>
+        </template>
+        <template v-else-if="column.dataIndex === 'status'">
+          <a-tooltip :title="record.statusMsg || statusMap[text] || '未知'">
+            <a-tag :color="statusColor[record.status]" :title="record.statusMsg || statusMap[text] || '未知'">{{
+              statusMap[text] || '未知'
+            }}</a-tag>
+          </a-tooltip>
+        </template>
+        <template v-else-if="column.dataIndex === 'buildId'">
+          <a-tooltip placement="topLeft" :title="text + ' ( 点击查看日志 ) '">
+            <span v-if="record.buildId <= 0"></span>
+            <a-tag v-else color="#108ee9" @click="handleBuildLog(record)">#{{ text }}</a-tag>
+          </a-tooltip>
+        </template>
+        <template v-else-if="column.tooltip">
+          <a-tooltip placement="topLeft" :title="text">
+            <span>{{ text || '' }}</span>
+          </a-tooltip>
+        </template>
+        <template v-else-if="column.dataIndex === 'operation'">
+          <a-space>
+            <a-button
+              v-if="record.status === 1 || record.status === 4 || record.status === 9"
+              size="small"
+              type="primary"
+              danger
+              @click="handleStopBuild(record)"
+              >停止
+            </a-button>
+            <a-dropdown v-else>
+              <a-button size="small" type="primary" @click="handleConfirmStartBuild(record)"
+                >构建<DownOutlined
+              /></a-button>
+              <template #overlay>
+                <a-menu>
+                  <a-menu-item key="1">
                     <a-button
                       size="small"
                       type="primary"
-                      danger
-                      v-if="item.status === 1 || item.status === 4 || item.status === 9"
-                      @click="handleStopBuild(item)"
-                      >停止
-                    </a-button>
-                    <a-dropdown v-else>
-                      <a-button size="small" type="primary" @click="handleConfirmStartBuild(item)">
-                        构建
-                        <DownOutlined />
-                      </a-button>
-                      <template v-slot:overlay>
-                        <a-menu>
-                          <a-menu-item key="1">
-                            <a-button
-                              size="small"
-                              type="primary"
-                              @click="reqStartBuild({ id: item.id, buildEnvParameter: item.buildEnvParameter }, true)"
-                              >直接构建
-                            </a-button>
-                          </a-menu-item>
-                          <a-menu-item key="2">
-                            <a-button
-                              size="small"
-                              type="primary"
-                              @click="reqStartBuild({ id: item.id, buildEnvParameter: item.buildEnvParameter }, false)"
-                            >
-                              后台构建
-                            </a-button>
-                          </a-menu-item>
-                        </a-menu>
-                      </template>
-                    </a-dropdown>
-                    <a-dropdown>
-                      <a-button size="small" type="primary" @click="handleEdit(item)">编辑</a-button>
-                      <template #overlay>
-                        <a-menu>
-                          <a-menu-item @click="handleEdit(item, 0)">
-                            <a href="javascript:;">构建方式</a>
-                          </a-menu-item>
-                          <a-menu-item @click="handleEdit(item, 1)">
-                            <a href="javascript:;">基础信息</a>
-                          </a-menu-item>
-                          <a-menu-item @click="handleEdit(item, 2)">
-                            <a href="javascript:;">构建流程</a>
-                          </a-menu-item>
-                          <a-menu-item @click="handleEdit(item, 3)">
-                            <a href="javascript:;">发布操作</a>
-                          </a-menu-item>
-                          <a-menu-item @click="handleEdit(item, 4)">
-                            <a href="javascript:;">其他配置</a>
-                          </a-menu-item>
-                        </a-menu>
-                      </template>
-                    </a-dropdown>
-                    <a-button size="small" @click="handleDelete(item)">删除</a-button>
+                      @click="reqStartBuild({ id: record.id, buildEnvParameter: record.buildEnvParameter }, true)"
+                      >直接构建</a-button
+                    >
+                  </a-menu-item>
+                  <a-menu-item key="2">
+                    <a-button
+                      size="small"
+                      type="primary"
+                      @click="reqStartBuild({ id: record.id, buildEnvParameter: record.buildEnvParameter }, false)"
+                      >后台构建</a-button
+                    >
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
+            <a-dropdown>
+              <a-button size="small" type="primary" @click="handleEdit(record, 1)">编辑</a-button>
+              <template #overlay>
+                <a-menu>
+                  <a-menu-item @click="handleEdit(record, 0)">
+                    <a href="javascript:;">构建方式</a>
+                  </a-menu-item>
+                  <a-menu-item @click="handleEdit(record, 1)">
+                    <a href="javascript:;">基础信息</a>
+                  </a-menu-item>
+                  <a-menu-item @click="handleEdit(record, 2)">
+                    <a href="javascript:;">构建流程</a>
+                  </a-menu-item>
+                  <a-menu-item @click="handleEdit(record, 3)">
+                    <a href="javascript:;">发布操作</a>
+                  </a-menu-item>
+                  <a-menu-item @click="handleEdit(record, 4)">
+                    <a href="javascript:;">其他配置</a>
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
+            <a-dropdown>
+              <a class="ant-dropdown-link" @click="(e) => e.preventDefault()">
+                更多
+                <DownOutlined />
+              </a>
+              <template #overlay>
+                <a-menu>
+                  <a-menu-item>
+                    <a-button size="small" type="primary" @click="copyItem(record)">复制</a-button>
+                  </a-menu-item>
+                  <a-menu-item>
+                    <a-button
+                      size="small"
+                      :disabled="!record.resultHasFile"
+                      type="primary"
+                      @click="handleDownloadFile(record)"
+                      >下载产物</a-button
+                    >
+                  </a-menu-item>
+                  <a-menu-item>
+                    <a-button size="small" type="primary" danger @click="handleDelete(record)">删除</a-button>
+                  </a-menu-item>
+
+                  <a-menu-item>
                     <a-tooltip
                       placement="leftBottom"
                       title="清除代码(仓库目录)为删除服务器中存储仓库目录里面的所有东西,删除后下次构建将重新拉起仓库里面的文件,一般用于解决服务器中文件和远程仓库中文件有冲突时候使用。执行时间取决于源码目录大小和文件数量如超时请耐心等待，或稍后重试"
                     >
-                      <a-button size="small" :disabled="!item.sourceDirExist" @click="handleClear(item)"
+                      <a-button
+                        size="small"
+                        type="primary"
+                        danger
+                        :disabled="!record.sourceDirExist"
+                        @click="handleClear(record)"
                         >清除代码
                       </a-button>
                     </a-tooltip>
-                  </a-button-group>
-                </a-row>
-              </a-card>
-            </a-col>
-          </a-row>
+                  </a-menu-item>
+                  <a-menu-divider />
+                  <a-menu-item>
+                    <a-button
+                      size="small"
+                      type="primary"
+                      :disabled="(listQuery.page - 1) * listQuery.limit + (index + 1) <= 1"
+                      @click="sortItemHander(record, index, 'top')"
+                      >置顶</a-button
+                    >
+                  </a-menu-item>
+                  <a-menu-item>
+                    <a-button
+                      size="small"
+                      type="primary"
+                      :disabled="(listQuery.page - 1) * listQuery.limit + (index + 1) <= 1"
+                      @click="sortItemHander(record, index, 'up')"
+                      >上移</a-button
+                    >
+                  </a-menu-item>
+                  <a-menu-item>
+                    <a-button
+                      size="small"
+                      type="primary"
+                      :disabled="(listQuery.page - 1) * listQuery.limit + (index + 1) === listQuery.total"
+                      @click="sortItemHander(record, index, 'down')"
+                    >
+                      下移
+                    </a-button>
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
+          </a-space>
         </template>
-        <template v-else>
-          <a-empty :image="Empty.PRESENTED_IMAGE_SIMPLE" description="没有任何构建" />
-        </template>
+      </template>
+      <!-- <template #cardPageTool>
         <a-row type="flex" justify="center">
           <a-divider v-if="listQuery.total / listQuery.limit > 1" dashed />
           <a-col>
             <a-pagination
               v-model:current="listQuery.page"
-              :showTotal="
+              v-model:pageSize="listQuery.limit"
+              :show-total="
                 (total) => {
                   return PAGE_DEFAULT_SHOW_TOTAL(total, listQuery)
                 }
               "
-              :showSizeChanger="true"
-              :pageSizeOptions="sizeOptions"
-              v-model:pageSize="listQuery.limit"
+              :show-size-changer="true"
+              :page-size-options="sizeOptions"
               :total="listQuery.total"
-              :hideOnSinglePage="true"
-              @showSizeChange="
+              :hide-on-single-page="true"
+              show-less-items
+              @show-size-change="
                 (current, size) => {
-                  this.listQuery.limit = size
-                  this.loadData()
+                  listQuery.limit = size
+                  loadData()
                 }
               "
-              @change="this.loadData"
-              show-less-items
+              @change="loadData"
             />
           </a-col>
         </a-row>
-      </template>
-      <template v-else-if="this.layoutType === 'table'">
-        <a-table
-          size="middle"
-          :columns="columns"
-          :data-source="list"
-          bordered
-          rowKey="id"
-          :pagination="pagination"
-          :scroll="{
-            x: 'max-content'
-          }"
-          @change="
-            (pagination, filters, sorter) => {
-              this.listQuery = CHANGE_PAGE(this.listQuery, {
-                pagination,
-                sorter
-              })
-              this.loadData()
-            }
-          "
-          :row-selection="rowSelection"
-        >
-          <template #bodyCell="{ column, text, record, index }">
-            <template v-if="column.dataIndex === 'name'">
-              <a-tooltip placement="topLeft" @click="handleDetails(record)" :title="`名称：${text} 点击查看详情`">
-                <a-button type="link" style="padding: 0" size="small"> <FullscreenOutlined />{{ text }}</a-button>
-              </a-tooltip>
-            </template>
-            <template v-else-if="column.dataIndex === 'branchName'">
-              <a-tooltip placement="topLeft">
-                <template v-slot:title>
-                  <div v-if="record.branchTagName">
-                    <div>标签名称：{{ record.branchTagName }}</div>
-                    <div>上次构建基于 commitId：{{ record.repositoryLastCommitId }}</div>
-                  </div>
-                  <div v-else>
-                    <div>分支名称：{{ text }}</div>
-                    <div>上次构建基于 commitId：{{ record.repositoryLastCommitId }}</div>
-                  </div>
-                </template>
-                <span v-if="record.branchTagName"><TagOutlined />{{ record.branchTagName }}</span>
-                <span v-else>{{ text }}</span>
-              </a-tooltip>
-            </template>
-
-            <template v-else-if="column.dataIndex === 'buildMode'">
-              <a-tooltip placement="topLeft" :title="text === 1 ? '容器构建' : '本地构建'">
-                <CloudOutlined v-if="text === 1" />
-                <CodeOutlined v-else />
-              </a-tooltip>
-            </template>
-            <template v-else-if="column.dataIndex === 'releaseMethod'">
-              <a-tooltip>
-                <template v-slot:title>
-                  <ul>
-                    <li>发布方式：{{ releaseMethodMap[text] }}</li>
-                    <li>产物目录：{{ record.resultDirFile }}</li>
-                    <li v-if="record.buildMode !== 1">构建命令：{{ record.script }}</li>
-                  </ul>
-                </template>
-                <span>{{ releaseMethodMap[text] }}</span>
-              </a-tooltip>
-            </template>
-            <template v-else-if="column.dataIndex === 'status'">
-              <a-tooltip :title="record.statusMsg || statusMap[text] || '未知'">
-                <a-tag :color="statusColor[record.status]" :title="record.statusMsg || statusMap[text] || '未知'">{{
-                  statusMap[text] || '未知'
-                }}</a-tag>
-              </a-tooltip>
-            </template>
-            <template v-else-if="column.dataIndex === 'buildId'">
-              <a-tooltip placement="topLeft" :title="text + ' ( 点击查看日志 ) '">
-                <span v-if="record.buildId <= 0"></span>
-                <a-tag v-else color="#108ee9" @click="handleBuildLog(record)">#{{ text }}</a-tag>
-              </a-tooltip>
-            </template>
-            <template v-else-if="column.tooltip">
-              <a-tooltip placement="topLeft" :title="text">
-                <span>{{ text || '' }}</span>
-              </a-tooltip>
-            </template>
-            <template v-else-if="column.dataIndex === 'operation'">
-              <a-space>
-                <a-button
-                  size="small"
-                  type="primary"
-                  danger
-                  v-if="record.status === 1 || record.status === 4 || record.status === 9"
-                  @click="handleStopBuild(record)"
-                  >停止
-                </a-button>
-                <a-dropdown v-else>
-                  <a-button size="small" type="primary" @click="handleConfirmStartBuild(record)"
-                    >构建<DownOutlined
-                  /></a-button>
-                  <template v-slot:overlay>
-                    <a-menu>
-                      <a-menu-item key="1">
-                        <a-button
-                          size="small"
-                          type="primary"
-                          @click="reqStartBuild({ id: record.id, buildEnvParameter: record.buildEnvParameter }, true)"
-                          >直接构建</a-button
-                        >
-                      </a-menu-item>
-                      <a-menu-item key="2">
-                        <a-button
-                          size="small"
-                          type="primary"
-                          @click="reqStartBuild({ id: record.id, buildEnvParameter: record.buildEnvParameter }, false)"
-                          >后台构建</a-button
-                        >
-                      </a-menu-item>
-                    </a-menu>
-                  </template>
-                </a-dropdown>
-                <a-dropdown>
-                  <a-button size="small" type="primary" @click="handleEdit(record, 1)">编辑</a-button>
-                  <template #overlay>
-                    <a-menu>
-                      <a-menu-item @click="handleEdit(record, 0)">
-                        <a href="javascript:;">构建方式</a>
-                      </a-menu-item>
-                      <a-menu-item @click="handleEdit(record, 1)">
-                        <a href="javascript:;">基础信息</a>
-                      </a-menu-item>
-                      <a-menu-item @click="handleEdit(record, 2)">
-                        <a href="javascript:;">构建流程</a>
-                      </a-menu-item>
-                      <a-menu-item @click="handleEdit(record, 3)">
-                        <a href="javascript:;">发布操作</a>
-                      </a-menu-item>
-                      <a-menu-item @click="handleEdit(record, 4)">
-                        <a href="javascript:;">其他配置</a>
-                      </a-menu-item>
-                    </a-menu>
-                  </template>
-                </a-dropdown>
-                <a-dropdown>
-                  <a class="ant-dropdown-link" @click="(e) => e.preventDefault()">
-                    更多
-                    <DownOutlined />
-                  </a>
-                  <template v-slot:overlay>
-                    <a-menu>
-                      <a-menu-item>
-                        <a-button size="small" type="primary" @click="copyItem(record)">复制</a-button>
-                      </a-menu-item>
-                      <a-menu-item>
-                        <a-button
-                          size="small"
-                          :disabled="!record.resultHasFile"
-                          type="primary"
-                          @click="handleDownloadFile(record)"
-                          >下载产物</a-button
-                        >
-                      </a-menu-item>
-                      <a-menu-item>
-                        <a-button size="small" type="primary" danger @click="handleDelete(record)">删除</a-button>
-                      </a-menu-item>
-
-                      <a-menu-item>
-                        <a-tooltip
-                          placement="leftBottom"
-                          title="清除代码(仓库目录)为删除服务器中存储仓库目录里面的所有东西,删除后下次构建将重新拉起仓库里面的文件,一般用于解决服务器中文件和远程仓库中文件有冲突时候使用。执行时间取决于源码目录大小和文件数量如超时请耐心等待，或稍后重试"
-                        >
-                          <a-button
-                            size="small"
-                            type="primary"
-                            danger
-                            :disabled="!record.sourceDirExist"
-                            @click="handleClear(record)"
-                            >清除代码
-                          </a-button>
-                        </a-tooltip>
-                      </a-menu-item>
-                      <a-menu-divider />
-                      <a-menu-item>
-                        <a-button
-                          size="small"
-                          type="primary"
-                          :disabled="(listQuery.page - 1) * listQuery.limit + (index + 1) <= 1"
-                          @click="sortItemHander(record, index, 'top')"
-                          >置顶</a-button
-                        >
-                      </a-menu-item>
-                      <a-menu-item>
-                        <a-button
-                          size="small"
-                          type="primary"
-                          :disabled="(listQuery.page - 1) * listQuery.limit + (index + 1) <= 1"
-                          @click="sortItemHander(record, index, 'up')"
-                          >上移</a-button
-                        >
-                      </a-menu-item>
-                      <a-menu-item>
-                        <a-button
-                          size="small"
-                          type="primary"
-                          :disabled="(listQuery.page - 1) * listQuery.limit + (index + 1) === listQuery.total"
-                          @click="sortItemHander(record, index, 'down')"
-                        >
-                          下移
-                        </a-button>
-                      </a-menu-item>
-                    </a-menu>
-                  </template>
-                </a-dropdown>
-              </a-space>
-            </template>
-          </template>
-        </a-table>
-      </template>
-    </a-card>
+      </template> -->
+    </CustomTable>
+    <!-- </template> -->
+    <!-- </a-card> -->
 
     <!-- 编辑区 -->
     <build-item
       v-if="editBuildVisible != 0"
-      :visibleType="editBuildVisible"
-      :editSteps="editSteps"
       :id="temp.id"
+      :visible-type="editBuildVisible"
+      :edit-steps="editSteps"
       :data="temp"
       @close="
         () => {
-          this.editBuildVisible = 0
+          editBuildVisible = 0
         }
       "
       @build="
         (build, buildId, buildEnvParameter) => {
-          this.editBuildVisible = 0
-          this.loadData()
-          this.loadGroupList()
+          editBuildVisible = 0
+          loadData()
+          loadGroupList()
           if (build) {
             reqStartBuild({ id: buildId, buildEnvParameter: buildEnvParameter || temp.buildEnvParameter }, true)
           }
@@ -552,29 +567,29 @@
     />
     <!-- 构建确认 -->
     <a-modal
-      destroyOnClose
-      :confirmLoading="confirmLoading"
-      width="40vw"
       v-model:open="buildConfirmVisible"
+      destroy-on-close
+      :confirm-loading="confirmLoading"
+      width="40vw"
       title="构建确认弹窗"
+      :mask-closable="false"
       @ok="handleStartBuild"
-      :maskClosable="false"
     >
       <a-form :model="temp" :label-col="{ span: 4 }" :wrapper-col="{ span: 20 }">
         <a-form-item label="名称" name="name">
-          <a-input readOnly disabled v-model:value="temp.name" />
+          <a-input v-model:value="temp.name" read-only disabled />
         </a-form-item>
         <a-form-item label="分支" name="branchName">
           <custom-select
             v-model:value="temp.branchName"
             :data="branchList"
             :disabled="temp.branchTagName ? true : false"
-            @onRefreshSelect="loadBranchListById(temp.repositoryId)"
-            :canReload="true"
-            inputPlaceholder="自定义分支通配表达式"
-            selectPlaceholder="请选择构建对应的分支"
+            :can-reload="true"
+            input-placeholder="自定义分支通配表达式"
+            select-placeholder="请选择构建对应的分支"
+            @on-refresh-select="loadBranchListById(temp.repositoryId)"
           >
-            <template v-slot:inputTips>
+            <template #inputTips>
               <div>
                 支持通配符(AntPathMatcher)
                 <ul>
@@ -594,12 +609,12 @@
           <custom-select
             v-model:value="temp.branchTagName"
             :data="branchTagList"
-            @onRefreshSelect="loadBranchListById(temp.repositoryId)"
-            :canReload="true"
-            inputPlaceholder="自定义标签通配表达式"
-            selectPlaceholder="选择构建的标签,不选为最新提交"
+            :can-reload="true"
+            input-placeholder="自定义标签通配表达式"
+            select-placeholder="选择构建的标签,不选为最新提交"
+            @on-refresh-select="loadBranchListById(temp.repositoryId)"
           >
-            <template v-slot:inputTips>
+            <template #inputTips>
               <div>
                 支持通配符(AntPathMatcher)
                 <ul>
@@ -619,7 +634,7 @@
             <a-switch v-model:checked="temp.checkRepositoryDiff" checked-children="是" un-checked-children="否" />
             <span>
               <a-tooltip>
-                <template v-slot:title> 差异构建是指构建时候是否判断仓库代码有变动，如果没有变动则不执行构建 </template>
+                <template #title> 差异构建是指构建时候是否判断仓库代码有变动，如果没有变动则不执行构建 </template>
                 <QuestionCircleOutlined />
               </a-tooltip>
               该选项仅本次构建生效
@@ -644,7 +659,7 @@
         <a-form-item label="构建备注" name="buildRemark" help="填写备注仅本次构建生效">
           <a-textarea
             v-model:value="temp.buildRemark"
-            :maxLength="240"
+            :max-length="240"
             placeholder="请输入构建备注,长度小于 240"
             :auto-size="{ minRows: 2, maxRows: 5 }"
           />
@@ -655,7 +670,7 @@
           label="筛选项目"
           help="筛选之后本次发布操作只发布筛选项,并且只对本次操作生效"
         >
-          <a-select mode="multiple" v-model:value="temp.dispatchSelectProjectArray" placeholder="请选择指定发布的项目">
+          <a-select v-model:value="temp.dispatchSelectProjectArray" mode="multiple" placeholder="请选择指定发布的项目">
             <a-select-option
               v-for="item in dispatchProjectList"
               :key="item.id"
@@ -696,9 +711,9 @@ import {
   CHANGE_PAGE,
   COMPUTED_PAGINATION,
   PAGE_DEFAULT_LIST_QUERY,
-  parseTime,
-  PAGE_DEFAULT_SHOW_TOTAL,
-  getCachePageLimit
+  parseTime
+  // PAGE_DEFAULT_SHOW_TOTAL,
+  // getCachePageLimit
 } from '@/utils/const'
 
 export default {
@@ -726,6 +741,7 @@ export default {
       default: ''
     }
   },
+  emits: ['cancel', 'confirm'],
   data() {
     return {
       Empty,
@@ -850,11 +866,11 @@ export default {
         }
       ],
 
-      countdownTime: Date.now(),
-      refreshInterval: 5,
+      // countdownTime: Date.now(),
+      // refreshInterval: 5,
       tableSelections: [],
       dispatchProjectList: [],
-      layoutType: null,
+      // layoutType: null,
       confirmLoading: false
     }
   },
@@ -862,7 +878,9 @@ export default {
     pagination() {
       return COMPUTED_PAGINATION(this.listQuery)
     },
-
+    activePage() {
+      return this.$attrs.routerUrl === this.$route.path
+    },
     rowSelection() {
       return {
         onChange: (selectedRowKeys) => {
@@ -875,19 +893,20 @@ export default {
   },
   watch: {},
   created() {
-    if (this.layout) {
-      this.layoutType = this.layout
-      this.loadData()
-    } else {
-      this.changeLayout()
-    }
+    // if (this.layout) {
+    // this.layoutType = this.layout
+    this.loadData()
+    // } else {
+    // this.changeLayout()
+    // }
     this.loadGroupList()
     //
-    this.countdownTime = Date.now() + this.refreshInterval * 1000
+    // this.countdownTime = Date.now() + this.refreshInterval * 1000
   },
   methods: {
     CHANGE_PAGE,
-    PAGE_DEFAULT_SHOW_TOTAL,
+    // PAGE_DEFAULT_SHOW_TOTAL,
+    // getCachePageLimit,
     // 分组数据
     loadGroupList() {
       getBuildGroupAll().then((res) => {
@@ -901,36 +920,39 @@ export default {
       this.listQuery.page = pointerEvent?.altKey || pointerEvent?.ctrlKey ? 1 : this.listQuery.page
       this.listQuery.repositoryId = this.repositoryId
       this.loading = true
-      getBuildList(this.listQuery).then((res) => {
-        if (res.code === 200) {
-          this.list = res.data.result
-          this.listQuery.total = res.data.total
-          // 重新计算倒计时
-          this.countdownTime = Date.now() + this.refreshInterval * 1000
-        }
-        this.loading = false
-      })
-    },
-    silenceLoadData() {
-      if (this.$attrs.routerUrl !== this.$route.path) {
-        // 重新计算倒计时
-        this.countdownTime = Date.now() + this.refreshInterval * 1000
-        return
-      }
-      this.loading = true
-      getBuildList(this.listQuery, false)
+      getBuildList(this.listQuery)
         .then((res) => {
           if (res.code === 200) {
             this.list = res.data.result
             this.listQuery.total = res.data.total
             // 重新计算倒计时
-            this.countdownTime = Date.now() + this.refreshInterval * 1000
+            // this.countdownTime = Date.now() + this.refreshInterval * 1000
           }
         })
         .finally(() => {
           this.loading = false
         })
     },
+    // silenceLoadData() {
+    //   if (this.$attrs.routerUrl !== this.$route.path) {
+    //     // 重新计算倒计时
+    //     this.countdownTime = Date.now() + this.refreshInterval * 1000
+    //     return
+    //   }
+    //   this.loading = true
+    //   getBuildList(this.listQuery, false)
+    //     .then((res) => {
+    //       if (res.code === 200) {
+    //         this.list = res.data.result
+    //         this.listQuery.total = res.data.total
+    //         // 重新计算倒计时
+    //         this.countdownTime = Date.now() + this.refreshInterval * 1000
+    //       }
+    //     })
+    //     .finally(() => {
+    //       this.loading = false
+    //     })
+    // },
 
     // 新增
     handleAdd() {
@@ -975,27 +997,21 @@ export default {
     },
     // 删除
     handleDelete(record) {
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: '真的要删除构建信息么？删除也将同步删除所有的构建历史记录信息',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
+        onOk: () => {
           // 删除
-          return await new Promise((resolve, reject) => {
-            deleteBuild(record.id)
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.loadData()
-                }
-                resolve()
+          return deleteBuild(record.id).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.loadData()
+            }
           })
         }
       })
@@ -1008,53 +1024,41 @@ export default {
         })
         return
       }
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: '真的要批量删除这些构建信息么？删除也将同步删除所有的构建历史记录信息，如果中途删除失败将终止删除操作',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
+        onOk: () => {
           // 删除
-          return await new Promise((resolve, reject) => {
-            deleteatchBuild({ ids: that.tableSelections.join(',') })
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.loadData()
-                }
-                resolve()
+          return deleteatchBuild({ ids: this.tableSelections.join(',') }).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.loadData()
+            }
           })
         }
       })
     },
     // 清除构建
     handleClear(record) {
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: '真的要清除构建信息么？',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            clearBuid(record.id)
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.loadData()
-                }
-                resolve()
+        onOk: () => {
+          return clearBuid(record.id).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.loadData()
+            }
           })
         }
       })
@@ -1140,27 +1144,21 @@ export default {
     },
     // 停止构建
     handleStopBuild(record) {
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: '确定要取消构建 【名称：' + record.name + '】 吗？注意：取消/停止构建不一定能正常关闭所有关联进程',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            that.temp = Object.assign({}, record)
-            stopBuild(that.temp.id)
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.loadData()
-                }
-                resolve()
+        onOk: () => {
+          this.temp = Object.assign({}, record)
+          return stopBuild(this.temp.id).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.loadData()
+            }
           })
         }
       })
@@ -1191,32 +1189,25 @@ export default {
       }
       // console.log(this.list, index, this.list[method === "top" ? index : method === "up" ? index - 1 : index + 1]);
       const compareId = this.list[method === 'top' ? index : method === 'up' ? index - 1 : index + 1].id
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: msg,
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          //
-          return await new Promise((resolve, reject) => {
-            sortItem({
-              id: record.id,
-              method: method,
-              compareId: compareId
-            })
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-
-                  that.loadData()
-                }
-                resolve()
+        onOk: () => {
+          return sortItem({
+            id: record.id,
+            method: method,
+            compareId: compareId
+          }).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+
+              this.loadData()
+            }
           })
         }
       })
@@ -1282,22 +1273,22 @@ export default {
         }
       })
     },
-    // 切换视图
-    changeLayout() {
-      if (!this.layoutType) {
-        const layoutType = localStorage.getItem('tableLayout')
-        // 默认表格
-        this.layoutType = layoutType === 'card' ? 'card' : 'table'
-      } else {
-        this.layoutType = this.layoutType === 'card' ? 'table' : 'card'
-        localStorage.setItem('tableLayout', this.layoutType)
-      }
-      this.listQuery = {
-        ...this.listQuery,
-        limit: this.layoutType === 'card' ? 8 : getCachePageLimit()
-      }
-      this.loadData()
-    },
+    // // 切换视图
+    // changeLayout() {
+    //   if (!this.layoutType) {
+    //     const layoutType = localStorage.getItem('tableLayout')
+    //     // 默认表格
+    //     this.layoutType = layoutType === 'card' ? 'card' : 'table'
+    //   } else {
+    //     this.layoutType = this.layoutType === 'card' ? 'table' : 'card'
+    //     localStorage.setItem('tableLayout', this.layoutType)
+    //   }
+    //   this.listQuery = {
+    //     ...this.listQuery,
+    //     limit: this.layoutType === 'card' ? 8 : getCachePageLimit()
+    //   }
+    //   this.loadData()
+    // },
     // 选择确认
     handerConfirm() {
       if (!this.tableSelections.length) {
@@ -1317,8 +1308,7 @@ export default {
       }
       this.$emit('confirm', selectData)
     }
-  },
-  emits: ['cancel', 'confirm']
+  }
 }
 </script>
 
@@ -1326,11 +1316,11 @@ export default {
 .item-info {
   padding: 4px 0;
 }
-:deep(.ant-statistic div) {
+/* :deep(.ant-statistic div) {
   display: inline-block;
   font-weight: normal;
 }
 :deep(.ant-statistic-content-value, .ant-statistic-content) {
   font-size: 16px;
-}
+} */
 </style>

@@ -1,27 +1,27 @@
 <template>
   <a-drawer
-    destroyOnClose
+    destroy-on-close
     placement="right"
-    :width="`${this.getCollapsed ? 'calc(100vw - 80px)' : 'calc(100vw - 200px)'}`"
+    :width="`${getCollapsed ? 'calc(100vw - 80px)' : 'calc(100vw - 200px)'}`"
     :open="true"
+    :header-style="{
+      padding: '0 10px'
+    }"
+    :body-style="{
+      padding: '0'
+    }"
     @close="
       () => {
         $emit('close')
       }
     "
-    :headerStyle="{
-      padding: '0 10px'
-    }"
-    :bodyStyle="{
-      padding: '0'
-    }"
   >
-    <template v-slot:title>
+    <template #title>
       <a-space>
         <div>
           <a-tabs
             v-model:activeKey="current"
-            :tabBarStyle="{
+            :tab-bar-style="{
               margin: '0'
             }"
           >
@@ -37,12 +37,12 @@
     </template>
     <div class="layout-content">
       <!-- 机器信息组件 -->
-      <machine-info v-if="current === 'info'" :machineId="machineId" />
-      <upgrade v-if="current === 'upgrade'" :machineId="machineId" />
-      <white-list v-if="current === 'path-config'" :machineId="machineId" />
-      <cache v-if="current === 'cache'" :machineId="machineId" />
-      <log v-if="current === 'log'" :machineId="machineId" />
-      <config-file v-if="current === 'config'" :machineId="machineId" />
+      <machine-info v-if="current === 'info'" :machine-id="machineId" />
+      <upgrade v-if="current === 'upgrade'" :machine-id="machineId" />
+      <white-list v-if="current === 'path-config'" :machine-id="machineId" />
+      <cache v-if="current === 'cache'" :machine-id="machineId" />
+      <log v-if="current === 'log'" :machine-id="machineId" />
+      <config-file v-if="current === 'config'" :machine-id="machineId" />
     </div>
   </a-drawer>
 </template>
@@ -57,18 +57,6 @@ import Log from '@/pages/node/node-layout/system/log.vue'
 import ConfigFile from '@/pages/node/node-layout/system/config-file.vue'
 import { useAppStore } from '@/stores/app'
 export default {
-  props: {
-    machineId: {
-      type: String
-    },
-    name: {
-      type: String
-    },
-    tab: {
-      type: String,
-      default: ''
-    }
-  },
   components: {
     machineInfo,
     upgrade,
@@ -77,16 +65,32 @@ export default {
     ConfigFile,
     Log
   },
-  computed: {
-    ...mapState(useAppStore, ['getCollapsed'])
+  props: {
+    machineId: {
+      type: String,
+      default: ''
+    },
+    name: {
+      type: String,
+      default: ''
+    },
+    tab: {
+      type: String,
+      default: ''
+    }
   },
+  emits: ['close'],
   data() {
     return {
       current: this.tab || 'info'
     }
   },
-  mounted() {},
-  emits: ['close']
+
+  computed: {
+    ...mapState(useAppStore, ['getCollapsed'])
+  },
+
+  mounted() {}
 }
 </script>
 

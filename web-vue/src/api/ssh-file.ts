@@ -1,5 +1,15 @@
-import axios from "./config";
-import { loadRouterBase } from "./config";
+///
+/// Copyright (c) 2019 Of Him Code Technology Studio
+/// Jpom is licensed under Mulan PSL v2.
+/// You can use this software according to the terms and conditions of the Mulan PSL v2.
+/// You may obtain a copy of Mulan PSL v2 at:
+/// 			http://license.coscl.org.cn/MulanPSL2
+/// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+/// See the Mulan PSL v2 for more details.
+///
+
+import axios from './config'
+import { loadRouterBase } from './config'
 
 /**
  * 上传文件到 SSH 节点
@@ -12,15 +22,15 @@ import { loadRouterBase } from "./config";
  */
 export function uploadFile(baseUrl, formData) {
   return axios({
-    url: baseUrl + "upload",
+    url: baseUrl + 'upload',
     headers: {
-      "Content-Type": "multipart/form-data;charset=UTF-8",
+      'Content-Type': 'multipart/form-data;charset=UTF-8'
     },
-    method: "post",
+    method: 'post',
     // 0 表示无超时时间
     timeout: 0,
-    data: formData,
-  });
+    data: formData
+  })
 }
 
 /**
@@ -29,10 +39,10 @@ export function uploadFile(baseUrl, formData) {
  */
 export function getRootFileList(baseUrl, id) {
   return axios({
-    url: baseUrl + "root_file_data.json",
-    method: "post",
-    data: { id },
-  });
+    url: baseUrl + 'root_file_data.json',
+    method: 'post',
+    data: { id }
+  })
 }
 
 /**
@@ -41,10 +51,10 @@ export function getRootFileList(baseUrl, id) {
  */
 export function getFileList(baseUrl, params) {
   return axios({
-    url: baseUrl + "list_file_data.json",
-    method: "post",
-    data: params,
-  });
+    url: baseUrl + 'list_file_data.json',
+    method: 'post',
+    data: params
+  })
 }
 
 /**
@@ -53,7 +63,7 @@ export function getFileList(baseUrl, params) {
  * @param {id, path, name} params
  */
 export function downloadFile(baseUrl, params) {
-  return loadRouterBase(baseUrl + "download", params);
+  return loadRouterBase(baseUrl + 'download', params)
 }
 
 /**
@@ -62,10 +72,10 @@ export function downloadFile(baseUrl, params) {
  */
 export function deleteFile(baseUrl, params) {
   return axios({
-    url: baseUrl + "delete.json",
-    method: "post",
-    data: params,
-  });
+    url: baseUrl + 'delete.json',
+    method: 'post',
+    data: params
+  })
 }
 
 /**
@@ -74,10 +84,10 @@ export function deleteFile(baseUrl, params) {
  */
 export function readFile(baseUrl, params) {
   return axios({
-    url: baseUrl + "read_file_data.json",
-    method: "post",
-    data: params,
-  });
+    url: baseUrl + 'read_file_data.json',
+    method: 'post',
+    data: params
+  })
 }
 
 /**
@@ -86,10 +96,10 @@ export function readFile(baseUrl, params) {
  */
 export function updateFileData(baseUrl, params) {
   return axios({
-    url: baseUrl + "update_file_data.json",
-    method: "post",
-    data: params,
-  });
+    url: baseUrl + 'update_file_data.json',
+    method: 'post',
+    data: params
+  })
 }
 
 /**
@@ -99,10 +109,10 @@ export function updateFileData(baseUrl, params) {
  */
 export function newFileFolder(baseUrl, params) {
   return axios({
-    url: baseUrl + "new_file_folder.json",
-    method: "post",
-    data: params,
-  });
+    url: baseUrl + 'new_file_folder.json',
+    method: 'post',
+    data: params
+  })
 }
 
 /**
@@ -112,10 +122,10 @@ export function newFileFolder(baseUrl, params) {
  */
 export function renameFileFolder(baseUrl, params) {
   return axios({
-    url: baseUrl + "rename.json",
-    method: "post",
-    data: params,
-  });
+    url: baseUrl + 'rename.json',
+    method: 'post',
+    data: params
+  })
 }
 
 /**
@@ -132,10 +142,10 @@ export function renameFileFolder(baseUrl, params) {
  */
 export function changeFilePermission(baseUrl, params) {
   return axios({
-    url: baseUrl + "change_file_permission.json",
-    method: "post",
-    data: params,
-  });
+    url: baseUrl + 'change_file_permission.json',
+    method: 'post',
+    data: params
+  })
 }
 
 /**
@@ -144,22 +154,22 @@ export function changeFilePermission(baseUrl, params) {
  * @returns
  */
 export function parsePermissions(str) {
-  let permissions = { owner: {}, group: {}, others: {} };
+  const permissions = { owner: {}, group: {}, others: {} }
 
-  let chars = str.split("");
-  permissions.owner.read = chars[1] === "r";
-  permissions.owner.write = chars[2] === "w";
-  permissions.owner.execute = chars[3] === "x";
+  const chars = str.split('')
+  permissions.owner.read = chars[1] === 'r'
+  permissions.owner.write = chars[2] === 'w'
+  permissions.owner.execute = chars[3] === 'x'
 
-  permissions.group.read = chars[4] === "r";
-  permissions.group.write = chars[5] === "w";
-  permissions.group.execute = chars[6] === "x";
+  permissions.group.read = chars[4] === 'r'
+  permissions.group.write = chars[5] === 'w'
+  permissions.group.execute = chars[6] === 'x'
 
-  permissions.others.read = chars[7] === "r";
-  permissions.others.write = chars[8] === "w";
-  permissions.others.execute = chars[9] === "x";
+  permissions.others.read = chars[7] === 'r'
+  permissions.others.write = chars[8] === 'w'
+  permissions.others.execute = chars[9] === 'x'
 
-  return permissions;
+  return permissions
 }
 
 /**
@@ -172,33 +182,33 @@ export function parsePermissions(str) {
  * @returns
  */
 export function calcFilePermissionValue(permissions) {
-  let value = 0;
+  let value = 0
   if (permissions.owner.read) {
-    value += 400;
+    value += 400
   }
   if (permissions.owner.write) {
-    value += 200;
+    value += 200
   }
   if (permissions.owner.execute) {
-    value += 100;
+    value += 100
   }
   if (permissions.group.read) {
-    value += 40;
+    value += 40
   }
   if (permissions.group.write) {
-    value += 20;
+    value += 20
   }
   if (permissions.group.execute) {
-    value += 10;
+    value += 10
   }
   if (permissions.others.read) {
-    value += 4;
+    value += 4
   }
   if (permissions.others.write) {
-    value += 2;
+    value += 2
   }
   if (permissions.others.execute) {
-    value += 1;
+    value += 1
   }
-  return value;
+  return value
 }

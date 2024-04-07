@@ -4,21 +4,21 @@
       <a-timeline-item>
         <span class="layui-elem-quote">
           当前程序打包时间：{{ temp.timeStamp }}
-          <a-tag v-if="this.nodeId || this.machineId">agent</a-tag>
+          <a-tag v-if="nodeId || machineId">agent</a-tag>
           <a-tag v-else>server</a-tag>
         </span>
       </a-timeline-item>
       <a-timeline-item>
         <span class="layui-elem-quote">当前前端打包时间：{{ temp.vueTimeStamp }}</span>
       </a-timeline-item>
-      <a-timeline-item v-if="!this.nodeId && !this.machineId">
+      <a-timeline-item v-if="!nodeId && !machineId">
         <span class="layui-elem-quote">beta计划：</span>
         <a-space>
           <a-switch
+            v-model:checked="temp.joinBetaRelease"
             checked-children="加入"
             un-checked-children="未加入"
             :disabled="true"
-            v-model:checked="temp.joinBetaRelease"
           />
           <template v-if="temp.joinBetaRelease">
             <a-button type="link" @click="handleChangeBetaRelease(false)">关闭 beta 计划</a-button>
@@ -72,7 +72,7 @@
           数据存储目录：
           <a-tag>{{ temp.dataPath }}</a-tag>
         </span>
-        <span class="layui-elem-quote" v-if="temp.jarFile">
+        <span v-if="temp.jarFile" class="layui-elem-quote">
           运行的Jar包：
           <a-tag>{{ temp.jarFile }}</a-tag>
         </span>
@@ -86,8 +86,8 @@
             :file-list="fileList"
             :disabled="!!percentage"
             :before-upload="beforeUpload"
-            @remove="handleRemove"
             accept=".jar,.zip"
+            @remove="handleRemove"
           >
             <LoadingOutlined v-if="percentage" />
             <a-button v-else><UploadOutlined />选择升级文件</a-button>
@@ -106,10 +106,10 @@
 
     <a-divider dashed />
     <div
-      v-html="changelog"
       :style="{
         color: getThemeStyle().color
       }"
+      v-html="changelog"
     ></div>
   </div>
 </template>
@@ -140,10 +140,10 @@ import { executionRequest } from '@/api/external'
 
 export default {
   name: 'Upgrade',
-  inject: ['globalLoading'],
   components: {
     // MarkdownItVue
   },
+  inject: ['globalLoading'],
   props: {
     nodeId: {
       type: String,
@@ -153,9 +153,6 @@ export default {
       type: String,
       default: ''
     }
-  },
-  computed: {
-    ...mapState(useGuideStore, ['getThemeStyle'])
   },
   data() {
     return {
@@ -168,6 +165,9 @@ export default {
       markdownit: null
     }
   },
+  computed: {
+    ...mapState(useGuideStore, ['getThemeStyle'])
+  },
   mounted() {
     this.loadData()
     const md = markdownit()
@@ -175,7 +175,7 @@ export default {
     const defaultBulletListOpenRenderer = md.renderer.rules.link_open || proxy
 
     md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
-      var aIndex = tokens[idx].attrIndex('target')
+      let aIndex = tokens[idx].attrIndex('target')
 
       if (aIndex < 0) {
         tokens[idx].attrPush(['target', '_blank']) // add new attribute
@@ -486,31 +486,23 @@ export default {
         '<li>下载前请阅读更新日志里面的说明和注意事项并且<b>请注意备份数据防止数据丢失！！</b></li>' +
         '<li>如果升级失败需要手动恢复奥</li>' +
         ' </ul>'
-      const that = this
       $confirm({
         title: '系统提示',
         content: h('div', null, [h('p', { innerHTML: html }, null)]),
         okText: '确认',
         zIndex: 1009,
         cancelText: '取消',
-        async onOk() {
-          //
-          return await new Promise((resolve, reject) => {
-            remoteUpgrade({
-              nodeId: that.nodeId,
-              machineId: that.machineId
-            })
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-
-                  that.startCheckUpgradeStatus(res.msg)
-                }
-                resolve()
+        onOk: () => {
+          return remoteUpgrade({
+            nodeId: this.nodeId,
+            machineId: this.machineId
+          }).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.startCheckUpgradeStatus(res.msg)
+            }
           })
         }
       })
@@ -524,30 +516,23 @@ export default {
           '<li>在使用 beta 版过程中遇到问题可以随时反馈给我们，我们会尽快为您解答。</li>' +
           ' </ul>'
         : '确认要关闭 beta 计划吗？'
-      const that = this
       $confirm({
         title: '系统提示',
         content: h('div', {}, [h('p', { innerHTML: html })]),
         okText: '确认',
         zIndex: 1009,
         cancelText: '取消',
-        async onOk() {
-          //
-          return await new Promise((resolve, reject) => {
-            changBetaRelease({
-              beta: beta
-            })
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-
-                  that.loadData()
-                }
-                resolve()
+        onOk: () => {
+          return changBetaRelease({
+            beta: beta
+          }).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+
+              this.loadData()
+            }
           })
         }
       })

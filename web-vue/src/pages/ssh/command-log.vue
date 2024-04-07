@@ -6,26 +6,27 @@
       :columns="columns"
       bordered
       :pagination="pagination"
-      @change="changePage"
       :scroll="{
         x: 'max-content'
       }"
+      @change="changePage"
     >
-      <template v-slot:title>
+      <template #title>
         <a-space wrap class="search-box">
           <a-input
             v-model:value="listQuery['%commandName%']"
-            @pressEnter="getCommandLogData"
             placeholder="搜索命令名称"
             class="search-input-item"
+            @press-enter="getCommandLogData"
           />
           <a-input
             v-model:value="listQuery['%sshName%']"
-            @pressEnter="getCommandLogData"
             placeholder="搜索ssh名称"
             class="search-input-item"
+            @press-enter="getCommandLogData"
           />
           <a-select
+            v-model:value="listQuery.status"
             show-search
             :filter-option="
               (input, option) => {
@@ -37,14 +38,14 @@
                 )
               }
             "
-            v-model:value="listQuery.status"
-            allowClear
+            allow-clear
             placeholder="状态"
             class="search-input-item"
           >
             <a-select-option v-for="(val, key) in statusMap" :key="key">{{ val }}</a-select-option>
           </a-select>
           <a-select
+            v-model:value="listQuery.triggerExecType"
             show-search
             :filter-option="
               (input, option) => {
@@ -56,8 +57,7 @@
                 )
               }
             "
-            v-model:value="listQuery.triggerExecType"
-            allowClear
+            allow-clear
             placeholder="触发类型"
             class="search-input-item"
           >
@@ -103,16 +103,16 @@
     </a-table>
     <!-- 构建日志 -->
     <a-modal
-      destroyOnClose
-      :width="style.width"
-      :bodyStyle="style.bodyStyle"
-      :style="style.style"
       v-model:open="logVisible"
+      destroy-on-close
+      :width="style.width"
+      :body-style="style.bodyStyle"
+      :style="style.style"
       title="执行日志"
       :footer="null"
-      :maskClosable="false"
+      :mask-closable="false"
     >
-      <command-log :height="style.bodyStyle.height" v-if="logVisible" :temp="temp" />
+      <command-log v-if="logVisible" :height="style.bodyStyle.height" :temp="temp" />
     </a-modal>
   </div>
 </template>
@@ -239,27 +239,20 @@ export default {
     },
     //  删除命令
     handleDelete(row) {
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: '真的要删除该执行记录吗？',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            // 删除
-            deleteCommandLog(row.id)
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.getCommandLogData()
-                }
-                resolve()
+        onOk: () => {
+          return deleteCommandLog(row.id).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.getCommandLogData()
+            }
           })
         }
       })

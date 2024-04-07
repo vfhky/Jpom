@@ -18,9 +18,11 @@
 
 <script setup lang="ts">
 import zhCN from 'ant-design-vue/es/locale/zh_CN'
+// TODO 国家化共用hooks抽离
+// import enUS from 'ant-design-vue/es/locale/en_US'
 import { theme } from 'ant-design-vue'
 import { onMounted, onUnmounted } from 'vue'
-
+import { SpinProps } from 'ant-design-vue/es/spin/Spin'
 const routerActivation = ref(true)
 const useGuideStore = guideStore()
 const getGuideCache = useGuideStore.getGuideCache
@@ -68,7 +70,7 @@ const useAppStore = appStore()
 const pageLoading = computed(() => {
   return useAppStore.loading
 })
-watch(pageLoading, (newValue, oldValue) => {
+watch(pageLoading, (newValue) => {
   //
   if (newValue === 2) {
     clearTimeout(pageLoadingTimeout.value)
@@ -114,15 +116,19 @@ const reload = () => {
   })
 }
 
-const globalLoadingProps = ref({
+const globalLoadingProps = ref<SpinProps>({
   spinning: false,
   tip: '加载中...',
   size: 'large',
-  delayTime: 500
+  delay: 500,
+  wrapperClassName: ''
 })
 
-// 全局 loading
-const globalLoading = (props: any) => {
+/**
+ * 全局 loading
+ * @param props 参数
+ */
+const globalLoading = (props: boolean | string | SpinProps) => {
   let newProps: any = {}
   if (typeof props === 'boolean') {
     newProps = { spinning: props }
@@ -156,8 +162,9 @@ provide('globalLoading', globalLoading)
   z-index: 99999;
   // background-color: #1f1f1f;
   // background-color: rgba(0, 0, 0, 0.7);
-  background-color: rgba(140, 140, 140, 0.3);
+  background-color: rgba(140, 140, 140, 0.2);
   opacity: 0.8;
+  height: 100vh;
 }
 </style>
 

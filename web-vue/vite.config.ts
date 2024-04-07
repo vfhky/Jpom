@@ -1,12 +1,13 @@
-/*
- * Copyright (c) 2019 Of Him Code Technology Studio
- * Jpom is licensed under Mulan PSL v2.
- * You can use this software according to the terms and conditions of the Mulan PSL v2.
- * You may obtain a copy of Mulan PSL v2 at:
- * 			http://license.coscl.org.cn/MulanPSL2
- * THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
- * See the Mulan PSL v2 for more details.
- */
+///
+/// Copyright (c) 2019 Of Him Code Technology Studio
+/// Jpom is licensed under Mulan PSL v2.
+/// You can use this software according to the terms and conditions of the Mulan PSL v2.
+/// You may obtain a copy of Mulan PSL v2 at:
+/// 			http://license.coscl.org.cn/MulanPSL2
+/// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+/// See the Mulan PSL v2 for more details.
+///
+
 import path from 'node:path'
 import { ConfigEnv, defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
@@ -19,6 +20,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 //ant-design-vue
 import { AntDesignVueResolver } from 'unplugin-vue-components/resolvers'
+import postcss from 'postcss'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }: ConfigEnv) => {
@@ -77,19 +79,29 @@ export default defineConfig(({ mode }: ConfigEnv) => {
         //安装两行后你会发现在组件中不用再导入ref，reactive等
         imports: ['vue', 'vue-router', 'pinia'],
         dts: 'src/d.ts/auto-import.d.ts',
+        eslintrc: {
+          enabled: true,
+          filepath: '.eslintrc-auto-import.json',
+          globalsPropValue: true
+        },
+
         //ant-design-vue
         resolvers: [AntDesignVueResolver()]
       }),
       AutoImport({
         dirs: ['src/d.ts/global'],
-        dts: 'src/d.ts/auto-global-import.d.ts'
+        dts: 'src/d.ts/auto-global-import.d.ts',
+        eslintrc: {
+          enabled: true,
+          filepath: '.eslintrc-global-import.json',
+          globalsPropValue: true
+        }
       }),
       Components({
         dts: 'src/d.ts/components.d.ts',
         //ant-design-vue
         resolvers: [AntDesignVueResolver({ importStyle: false, resolveIcons: true })]
       }),
-
       createHtmlPlugin({
         minify: true,
         viteNext: true,
@@ -107,7 +119,30 @@ export default defineConfig(({ mode }: ConfigEnv) => {
         emitFile: false,
         // file: 'states.html',
         open: true
-      })
+      }),
+      {
+        name: 'vite-plugin-skip-empty-css',
+        async transform(code, id) {
+          if (/(\.css|\.scss|\.less)$/.test(id)) {
+            if (code === '') return ''
+            const { root } = await postcss([
+              {
+                postcssPlugin: 'check-empty-or-comments-only'
+              }
+            ]).process(code, { from: id })
+            if (
+              root.nodes.length === 0 ||
+              root.nodes.every((node) => {
+                return node.type === 'comment'
+              })
+            ) {
+              return ''
+            }
+            return code
+          }
+          return code
+        }
+      }
     ]
   }
 })

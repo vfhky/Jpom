@@ -1,5 +1,58 @@
 # 🚀 版本日志
 
+## 2.11.3.2 (2024-04-07)
+
+### 🐣 新增功能
+
+1. 【server】新增 Oauth2 新增钉钉扫码登录
+
+### 🐞 解决BUG、优化功能
+
+1. 【agent】优化 DSL 项目支持配置在特定目录执行脚本（run.execPath）
+2. 【agent】优化 管理脚本 -Xss 默认值修改为 512k（感谢@Again... ）
+3. 【server】优化 管理脚本 -Xss 默认值修改为 1024k（感谢@Again... ）
+4. 【server】优化 声明使用开源软件列表、增加本软件开源协议声明
+
+------
+
+## 2.11.3.1 (2024-04-02)
+
+### 🐣 新增功能
+
+1. 【server】新增 数据库支持 *mariadb*
+
+### 🐞 解决BUG、优化功能
+
+1. 【server】修复 无法查询到分组信息（页面下拉框）（感谢@猫猫向钱跑）
+2. 【server】修复 【项目文件管理远程下载】、【镜像创建容器】确认按钮无法使用（感谢@猫猫向钱跑）
+3. 【server】修改 资产管理机器管理删除按钮无法正常使用（感谢@🇩）
+4. 【server】修复 SSH 面板文件管理无法正常切换（感谢@勤思·）
+5. 【server】优化 部分页面在火狐浏览器无法正常打开（感谢[@sparkarvin](https://gitee.com/arvinlovegood_admin) [Gitee issues I96IOA](https://gitee.com/dromara/Jpom/issues/I96IOA) ）
+   （感谢[@a20070322](https://gitee.com/a20070322) [Gitee Pr 221](https://gitee.com/dromara/Jpom/pulls/221)  ）
+
+------
+
+## 2.11.3.0 (2024-03-21)
+
+### 🐣 新增功能
+
+1. 【server】新增 数据库支持 *postgresql* （感谢[@王先生](https://gitee.com/whz_gmg1)）[Gitee Pr 223](https://gitee.com/dromara/Jpom/pulls/223)
+
+### 🐞 解决BUG、优化功能
+
+1. 【all】优化 新增 `jpom.system.command-use-sudo` 配置属性控制是否使用 sudo 执行部分系统命令
+2. 【server】优化 前端页面 keep-alive 可能导致的内存泄漏问题（感谢[@a20070322](https://gitee.com/a20070322) [Gitee issues I9510M](https://gitee.com/dromara/Jpom/issues/I9510M) ）
+3. 【server】修复 部分弹窗不生效问题（感谢[@a20070322](https://gitee.com/a20070322)  [Gitee Pr 215](https://gitee.com/dromara/Jpom/pulls/215) ）
+4. 【server】优化 前端 ES lint 配置规范前端代码（感谢[@a20070322](https://gitee.com/a20070322) [Gitee Pr 214](https://gitee.com/dromara/Jpom/pulls/214) / [Gitee Pr 215](https://gitee.com/dromara/Jpom/pulls/215) / [Gitee Pr 217](https://gitee.com/dromara/Jpom/pulls/217) ）
+5. 【server】修复 docker 控制台网络选项卡页面空白（感谢@破冰）
+6. 【server】修复 节点历史监控统计图表时间查询不生效（感谢@九問）
+7. 【server】优化 SSH 脚本触发器支持传入参数当环境变量（感谢@小朱）
+8. 【server】修复 h2迁移其它数据库时部分数据丢失（感谢[@王先生](https://gitee.com/whz_gmg1)）[Gitee issues I9977K](https://gitee.com/dromara/Jpom/issues/I9977K)
+9. 【server】优化 逐步引入新版表格（构建、项目、节点、资产机器）（感谢[@a20070322](https://gitee.com/a20070322) [Gitee Pr 218](https://gitee.com/dromara/Jpom/pulls/218) / [Gitee Pr 220](https://gitee.com/dromara/Jpom/pulls/220) / [Gitee Pr 222](https://gitee.com/dromara/Jpom/pulls/222) ）
+10. 【server】优化 工作空间概括构建日志支持快速查看详情（感谢@Roger.cao）
+
+------
+
 ## 2.11.2.3 (2024-02-29)
 
 ### 🐞 解决BUG、优化功能
@@ -8,7 +61,7 @@
 2. 【server】优化 支持配置前端所有参数编码来规避部分安全规则检查（感谢[@zhaozxc2010](https://gitee.com/zhaozxc2010) [Gitee issues I8Z1VJ](https://gitee.com/dromara/Jpom/issues/I8Z1VJ) ）
 3. 【server】优化 上传文件空文件提示文件路径（感谢[@SchuckBate](https://gitee.com/skBate) [Gitee issues I93FI6](https://gitee.com/dromara/Jpom/issues/I93FI6) ）
 4. 【server】优化 监听日志文件消息发送失败后自动移除会话（感谢[@singlethread](https://gitee.com/zengwei_joni) [Gitee issues I93ZFX](https://gitee.com/dromara/Jpom/issues/I93ZFX) ）
-5. 【server】优化 容器构建产物为文件时保存路径层级错误（感谢[@vfhky](https://github.com/vfhky)）[Github Pr 71](https://github.com/dromara/Jpom/pull/71) ）
+5. 【server】优化 容器构建产物为文件时保存路径层级错误（感谢[@vfhky](https://github.com/vfhky) [Github Pr 71](https://github.com/dromara/Jpom/pull/71) ）
 
 ------
 
@@ -27,7 +80,7 @@
 
 ### 🐞 解决BUG、优化功能
 
-1. 【server】优化 构建代码未变动流程打断触发器未传入原因（statusMsg）（感谢@烛孩） 
+1. 【server】优化 构建代码未变动流程打断触发器未传入原因（statusMsg）（感谢@烛孩）
 2. 【server】修复 项目控制台日志删除弹窗未能正常关闭（感谢@%）
 3. 【server】修复 脚本日志时间筛选不生效（感谢[@zhaozxc2010](https://gitee.com/zhaozxc2010) [Gitee issues I8ZNKL](https://gitee.com/dromara/Jpom/issues/I8ZNKL) ）
 4. 【server】优化 页面左侧菜单固定悬浮不跟随屏幕滚动条滚动（感谢[@a20070322](https://gitee.com/a20070322) [Gitee issues I8ZOOB](https://gitee.com/dromara/Jpom/issues/I8ZOOB) / [Gitee Pr 201](https://gitee.com/dromara/Jpom/pulls/201) ）
@@ -89,7 +142,7 @@
 
 ### 🐞 解决BUG、优化功能
 
-1. 【all】优化 机器状态新增：资源监控异常（资源监控异常不影响功能使用） 
+1. 【all】优化 机器状态新增：资源监控异常（资源监控异常不影响功能使用）
 2. 【server】优化 取消登录页动态背景图
 3. 【server】修复 节点分发文件中心、静态文件后文件自动被删除（感谢@九問）
 4. 【server】优化 容器构建支持配置容器资源（HostConfig）（感谢@珂儿）
@@ -134,7 +187,7 @@
 
 ### 🐣 新增功能
 
-1. 【server】新增  资产总览统计
+1. 【server】新增 资产总览统计
 
 ### 🐞 解决BUG、优化功能
 
@@ -245,7 +298,7 @@
 
 ### 🐞 解决BUG、优化功能
 
-1. 【server】优化 支持批量删除构建信息（感谢@奇奇） 
+1. 【server】优化 支持批量删除构建信息（感谢@奇奇）
 2. 【server】修复 删除项目、删除分发检查关联构建失败问题
 3. 【all】优化 关闭 Process 方式
 4. 【server】优化 节点分发相关页面问题（感谢[@陈旭](https://gitee.com/chenxu8989) [Gitee issues I8TMDW](https://gitee.com/dromara/Jpom/issues/I8TMDW)）
@@ -293,7 +346,7 @@
 
 ### 🐞 解决BUG、优化功能
 
-1. 【server】修复 新版页面漏掉项目复制按钮 
+1. 【server】修复 新版页面漏掉项目复制按钮
 2. 【server】优化 逻辑节点中项目数和脚本数仅显示当前工作空间数量
 3. 【server】优化 项目编辑和节点分发页面支持快捷配置授权目录
 4. 【server】优化 项目编辑支持切换节点（快速同步其他节点项目）
@@ -344,8 +397,7 @@
 3. 全面下架节点证书管理功能（请使用工作空间证书代替）如果您当前使用到此功能请先手动备份相关数据
 4. 全面下架全下架节点 NGINX 管理功能（请使用 DSL 模式代替）如果您当前使用到此功能请先手动备份相关数据
 
->❓ 为什么要下架上述功能：由于版本迭代已经有更好的新功能可以代替之前旧功能，并且新功能从另一种角度更方便。下架也是为了我们后续版本维护迭代更高效
-
+> ❓ 为什么要下架上述功能：由于版本迭代已经有更好的新功能可以代替之前旧功能，并且新功能从另一种角度更方便。下架也是为了我们后续版本维护迭代更高效
 
 - 【白名单】关键词统一调整为【授权】
 - 【黑名单】关键词统一调整为【禁止】
@@ -361,7 +413,7 @@
 
 ### 🐞 解决BUG、优化功能
 
-1. 【server】优化 导入 SSH、项目 CSV 数据自动识别编码格式 
+1. 【server】优化 导入 SSH、项目 CSV 数据自动识别编码格式
 2. 【server】优化 执行 SSH 脚本获取流异常：getInputStream() should be called before connect()
 3. 【server】升级 mwiede 依赖版本
 4. 【server】优化 资产管理 SSH 支持配置禁用监控（避免频繁登录）`jpom.assets.ssh.disable-monitor-group-name`（感谢@Again...）

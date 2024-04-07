@@ -1,8 +1,8 @@
 <template>
   <div>
     <log-view
-      titleName="任务日志"
       :ref="`logView`"
+      title-name="任务日志"
       :visible="visible"
       @close="
         () => {
@@ -10,7 +10,7 @@
         }
       "
     >
-      <template v-slot:before>
+      <template #before>
         <a-space>
           <a-input-number v-model:value="tail" placeholder="读取行数" style="width: 150px">
             <template #addonBefore>
@@ -26,7 +26,7 @@
           </div>
           <a-button type="primary" size="small" @click="init"><ReloadOutlined /> 刷新 </a-button>
           |
-          <a-button type="primary" :disabled="!this.logId" size="small" @click="download">
+          <a-button type="primary" :disabled="!logId" size="small" @click="download">
             <DownloadOutlined /> 下载
           </a-button>
           |
@@ -49,22 +49,27 @@ export default {
   },
   props: {
     dataId: {
-      type: String
+      type: String,
+      default: ''
     },
     id: {
-      type: String
+      type: String,
+      default: ''
     },
     type: {
-      type: String
+      type: String,
+      default: ''
     },
     urlPrefix: {
-      type: String
+      type: String,
+      default: ''
     },
     visible: {
       type: Boolean,
       default: false
     }
   },
+  emits: ['close'],
   data() {
     return {
       logTimer: null,
@@ -132,7 +137,6 @@ export default {
     download() {
       window.open(dockerSwarmServicesDownloaLog(this.urlPrefix, this.logId), '_blank')
     }
-  },
-  emits: ['close']
+  }
 }
 </script>

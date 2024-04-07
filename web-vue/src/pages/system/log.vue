@@ -3,8 +3,8 @@
     <a-layout class="log-layout">
       <!-- 侧边栏 文件树 -->
       <a-layout-sider theme="light" class="sider" width="20%">
-        <a-empty :image="Empty.PRESENTED_IMAGE_SIMPLE" v-if="list.length === 0" />
-        <a-directory-tree :treeData="list" :fieldNames="replaceFields" @select="select" default-expand-all>
+        <a-empty v-if="list.length === 0" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
+        <a-directory-tree :tree-data="list" :field-names="replaceFields" default-expand-all @select="select">
         </a-directory-tree>
       </a-layout-sider>
       <!-- 单个文件内容 -->
@@ -13,10 +13,8 @@
           <template #before>
             <a-space>
               <a-button type="primary" size="small" @click="loadData">刷新</a-button>
-              <a-button type="primary" danger size="small" :disabled="!this.temp.path" @click="deleteLog"
-                >删除</a-button
-              >
-              <a-button type="primary" size="small" :disabled="!this.temp.path" @click="downloadLog">下载</a-button>
+              <a-button type="primary" danger size="small" :disabled="!temp.path" @click="deleteLog">删除</a-button>
+              <a-button type="primary" size="small" :disabled="!temp.path" @click="downloadLog">下载</a-button>
               |
             </a-space>
           </template>
@@ -160,32 +158,24 @@ export default {
     },
     // 删除文件
     deleteLog() {
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: '真的要删除日志文件么？',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            const params = {
-              nodeId: null,
-              path: that.temp.path
-            }
-            // 删除日志
-            deleteLog(params)
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.visible = false
-                  that.loadData()
-                }
-                resolve()
+        onOk: () => {
+          return deleteLog({
+            nodeId: null,
+            path: this.temp.path
+          }).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.visible = false
+              this.loadData()
+            }
           })
         }
       })

@@ -1,5 +1,15 @@
-import axios from "./config";
-import { loadRouterBase } from "./config";
+///
+/// Copyright (c) 2019 Of Him Code Technology Studio
+/// Jpom is licensed under Mulan PSL v2.
+/// You can use this software according to the terms and conditions of the Mulan PSL v2.
+/// You may obtain a copy of Mulan PSL v2 at:
+/// 			http://license.coscl.org.cn/MulanPSL2
+/// THIS SOFTWARE IS PROVIDED ON AN "AS IS" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY OR FIT FOR A PARTICULAR PURPOSE.
+/// See the Mulan PSL v2 for more details.
+///
+
+import axios from './config'
+import { loadRouterBase } from './config'
 
 /**
  * 备份列表
@@ -10,10 +20,10 @@ import { loadRouterBase } from "./config";
  */
 export function getBackupList(params) {
   return axios({
-    url: "/system/backup/list",
-    method: "post",
-    data: params,
-  });
+    url: '/system/backup/list',
+    method: 'post',
+    data: params
+  })
 }
 
 /**
@@ -21,9 +31,9 @@ export function getBackupList(params) {
  */
 export function getTableNameList() {
   return axios({
-    url: "/system/backup/table-name-list",
-    method: "post",
-  });
+    url: '/system/backup/table-name-list',
+    method: 'post'
+  })
 }
 
 /**
@@ -32,16 +42,16 @@ export function getTableNameList() {
  */
 export function createBackup(tableNameList) {
   const data = {
-    tableNameList,
-  };
+    tableNameList
+  }
   return axios({
-    url: "/system/backup/create",
-    method: "post",
+    url: '/system/backup/create',
+    method: 'post',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json'
     },
-    data,
-  });
+    data
+  })
 }
 
 /**
@@ -50,10 +60,10 @@ export function createBackup(tableNameList) {
  */
 export function deleteBackup(id) {
   return axios({
-    url: "/system/backup/delete",
-    method: "post",
-    data: { id },
-  });
+    url: '/system/backup/delete',
+    method: 'post',
+    data: { id }
+  })
 }
 
 /**
@@ -63,11 +73,11 @@ export function deleteBackup(id) {
  */
 export function restoreBackup(id) {
   return axios({
-    url: "/system/backup/restore",
-    method: "post",
+    url: '/system/backup/restore',
+    method: 'post',
     timeout: 0,
-    data: { id },
-  });
+    data: { id }
+  })
 }
 
 /**
@@ -76,9 +86,9 @@ export function restoreBackup(id) {
  * @returns
  */
 export function downloadBackupFile(id) {
-  return loadRouterBase("/system/backup/download", {
-    id: id,
-  });
+  return loadRouterBase('/system/backup/download', {
+    id: id
+  })
 }
 
 /**
@@ -90,36 +100,36 @@ export function downloadBackupFile(id) {
  */
 export function uploadBackupFile(formData) {
   return axios({
-    url: "/system/backup/upload",
+    url: '/system/backup/upload',
     headers: {
-      "Content-Type": "multipart/form-data;charset=UTF-8",
+      'Content-Type': 'multipart/form-data;charset=UTF-8'
     },
-    method: "post",
+    method: 'post',
     // 0 表示无超时时间
     timeout: 0,
-    data: formData,
-  });
+    data: formData
+  })
 }
 
 export const backupTypeArray = [
-  { key: 0, value: "全量备份", disabled: false },
-  { key: 1, value: "部分备份", disabled: false },
-  { key: 2, value: "导入备份", disabled: true },
-  { key: 3, value: "自动备份", disabled: true },
-];
+  { key: 0, value: '全量备份', disabled: false },
+  { key: 1, value: '部分备份', disabled: false },
+  { key: 2, value: '导入备份', disabled: true },
+  { key: 3, value: '自动备份', disabled: true }
+]
 
 export const arrayToMap = (arra) => {
-  let obj = {};
+  const obj = {}
   arra.forEach((value) => {
-    obj[value.key] = value.value;
-  });
-  return obj;
-};
+    obj[value.key] = value.value
+  })
+  return obj
+}
 
-export const backupTypeMap = arrayToMap(backupTypeArray);
+export const backupTypeMap = arrayToMap(backupTypeArray)
 
 export const backupStatusMap = {
-  0: "处理中",
-  1: "处理成功",
-  2: "处理失败",
-};
+  0: '处理中',
+  1: '处理成功',
+  2: '处理失败'
+}

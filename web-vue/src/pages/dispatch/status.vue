@@ -1,7 +1,7 @@
 <template>
   <div>
     <a-drawer
-      destroyOnClose
+      destroy-on-close
       :title="`查看 ${name} 状态`"
       placement="right"
       width="85vw"
@@ -22,7 +22,7 @@
             :bordered="true"
             :data-source="list"
             :pagination="false"
-            rowKey="id_no"
+            row-key="id_no"
             :scroll="{
               x: 'max-content'
             }"
@@ -51,7 +51,7 @@
                 />
               </a-space>
             </template>
-            <template #bodyCell="{ column, text, record, index }">
+            <template #bodyCell="{ column, text, record }">
               <template v-if="column.dataIndex === 'nodeId'">
                 <a-tooltip placement="topLeft" :title="text">
                   <a-button type="link" style="padding: 0" size="small" @click="toNode(text)">
@@ -147,8 +147,9 @@
         <a-tab-pane key="2" tab="配置">
           <!-- 配置分发 -->
           <div style="width: 50vw">
-            <draggable v-model="list" :group="`sortValue`" item-key="id" handle=".move" chosenClass="box-shadow">
-              <template #item="{ element }">
+            <!-- list -->
+            <Container drag-handle-selector=".move" orientation="vertical" @drop="onDrop">
+              <Draggable v-for="(element, index) in list" :key="index">
                 <a-row class="item-row">
                   <a-col :span="18">
                     <span> 节点名： {{ element.nodeName }} </span>
@@ -176,8 +177,8 @@
                         type="primary"
                         danger
                         size="small"
-                        @click="handleRemoveProject(element)"
                         :disabled="!list || list.length <= 1"
+                        @click="handleRemoveProject(element)"
                       >
                         解绑
                       </a-button>
@@ -187,8 +188,8 @@
                     </a-space>
                   </a-col>
                 </a-row>
-              </template>
-            </draggable>
+              </Draggable>
+            </Container>
             <a-col style="margin-top: 10px">
               <a-space>
                 <a-button type="primary" size="small" @click="viewDispatchManagerOk">保存</a-button>
@@ -201,7 +202,7 @@
 
     <!-- 项目文件组件 -->
     <a-drawer
-      destroyOnClose
+      destroy-on-close
       :title="drawerTitle"
       placement="right"
       width="85vw"
@@ -211,15 +212,15 @@
       <file
         v-if="drawerFileVisible"
         :id="temp.id"
-        :nodeId="temp.nodeId"
-        :projectId="temp.projectId"
-        @goConsole="goConsole"
-        @goReadFile="goReadFile"
+        :node-id="temp.nodeId"
+        :project-id="temp.projectId"
+        @go-console="goConsole"
+        @go-read-file="goReadFile"
       />
     </a-drawer>
     <!-- 项目控制台组件 -->
     <a-drawer
-      destroyOnClose
+      destroy-on-close
       :title="drawerTitle"
       placement="right"
       width="85vw"
@@ -229,14 +230,14 @@
       <console
         v-if="drawerConsoleVisible"
         :id="temp.id"
-        :nodeId="temp.nodeId"
-        :projectId="temp.projectId"
-        @goFile="goFile"
+        :node-id="temp.nodeId"
+        :project-id="temp.projectId"
+        @go-file="goFile"
       />
     </a-drawer>
     <!-- 项目跟踪文件组件 -->
     <a-drawer
-      destroyOnClose
+      destroy-on-close
       :title="drawerTitle"
       placement="right"
       width="85vw"
@@ -245,11 +246,11 @@
     >
       <file-read
         v-if="drawerReadFileVisible"
-        :nodeId="temp.nodeId"
-        :readFilePath="temp.readFilePath"
         :id="temp.id"
-        :projectId="temp.projectId"
-        @goFile="goFile"
+        :node-id="temp.nodeId"
+        :read-file-path="temp.readFilePath"
+        :project-id="temp.projectId"
+        @go-file="goFile"
       />
     </a-drawer>
   </div>
@@ -272,27 +273,32 @@ import {
   itemGroupBy,
   parseTime,
   renderSize,
-  formatDuration
+  formatDuration,
+  dropApplyDrag
 } from '@/utils/const'
 import File from '@/pages/node/node-layout/project/project-file'
 import Console from '@/pages/node/node-layout/project/project-console'
 import FileRead from '@/pages/node/node-layout/project/project-file-read'
-import draggable from 'vuedraggable-es'
+import { Container, Draggable } from 'vue3-smooth-dnd'
 export default {
   components: {
     File,
     Console,
     FileRead,
-    draggable
+    Container,
+    Draggable
   },
   props: {
     id: {
-      type: String
+      type: String,
+      default: ''
     },
     name: {
-      type: String
+      type: String,
+      default: ''
     }
   },
+  emits: ['close'],
   data() {
     return {
       childLoading: true,
@@ -393,7 +399,11 @@ export default {
     renderSize,
     formatDuration,
     randomStr,
-
+    onDrop(dropResult) {
+      this.list = dropApplyDrag(this.list, dropResult).map((item, index) => {
+        return { ...item, sortValue: index }
+      })
+    },
     loadData() {
       this.childLoading = true
       this.handleReloadById().then(() => {
@@ -606,7 +616,6 @@ export default {
         '<li>一般用于服务器无法连接且已经确定不再使用</li>' +
         '<li>如果误操作会产生冗余数据！！！</li>' +
         ' </ul>'
-      const that = this
       $confirm({
         title: '危险操作！！！',
         zIndex: 1009,
@@ -615,23 +624,18 @@ export default {
         cancelButtonProps: { type: 'primary' },
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            removeProject({
-              nodeId: item.nodeId,
-              projectId: item.projectId,
-              id: that.id
-            })
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.loadData()
-                }
-                resolve()
+        onOk: () => {
+          return removeProject({
+            nodeId: item.nodeId,
+            projectId: item.projectId,
+            id: this.id
+          }).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.loadData()
+            }
           })
         }
       })
@@ -657,8 +661,7 @@ export default {
         }
       })
     }
-  },
-  emits: ['close']
+  }
 }
 </script>
 
@@ -680,6 +683,7 @@ export default {
   padding: 10px;
   margin: 5px;
   border: 1px solid #e8e8e8;
-  border-radius: 2px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.8);
 }
 </style>

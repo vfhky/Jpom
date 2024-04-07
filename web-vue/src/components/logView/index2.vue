@@ -1,12 +1,12 @@
 <template>
-  <div :style="`margin-top:${this.marginTop}`">
+  <div :style="`margin-top:${marginTop}`">
     <div class="log-filter">
       <a-row type="flex" align="middle">
         <a-col>
           <slot name="before"></slot>
         </a-col>
 
-        <a-col v-if="this.extendBar" style="padding-left: 10px">
+        <a-col v-if="extendBar" style="padding-left: 10px">
           <a-space>
             <a-tooltip title="清空当前缓冲区内容">
               <a-button type="primary" size="small" @click="clearLogCache"><DeleteOutlined />清空</a-button>
@@ -27,7 +27,7 @@
       </a-row>
     </div>
     <!-- <pre class="log-view" :id="`${this.id}`" :style="`height:${this.height}`">{{ defText }}</pre> -->
-    <viewPre ref="viewPre" :height="this.height" :config="this.temp"></viewPre>
+    <viewPre ref="viewPre" :height="height" :config="temp"></viewPre>
   </div>
 </template>
 
@@ -39,22 +39,17 @@ export default {
   components: {
     viewPre
   },
-  computed: {
-    regModifier() {
-      return this.regModifiers.join('')
-    }
-  },
   props: {
     height: {
-      String,
+      type: String,
       default: '50vh'
     },
     marginTop: {
-      String,
+      type: String,
       default: '0'
     },
     extendBar: {
-      Boolean,
+      type: Boolean,
       default: true
     }
   },
@@ -65,6 +60,11 @@ export default {
         // 自动换行
         wordBreak: false
       }
+    }
+  },
+  computed: {
+    regModifier() {
+      return this.regModifiers.join('')
     }
   },
   mounted() {

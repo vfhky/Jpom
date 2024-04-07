@@ -5,23 +5,23 @@
         <a-row>
           <a-space style="display: inline">
             <a-input v-model:value="addName" placeholder="创建文件 /xxx/xxx/xxx" style="width: 100%">
-              <template v-slot:addonAfter>
+              <template #addonAfter>
                 <a-button type="primary" size="small" :disabled="!addName" @click="addItemHander">确认 </a-button>
               </template>
             </a-input>
           </a-space>
         </a-row>
-        <a-directory-tree :treeData="treeData" :fieldNames="replaceFields" @select="select"> </a-directory-tree>
+        <a-directory-tree :tree-data="treeData" :field-names="replaceFields" @select="select"> </a-directory-tree>
       </a-col>
       <a-col span="18" style="padding-left: 5px">
         <a-space direction="vertical" style="display: flex">
           <code-editor
-            height="calc(100vh - 170px)"
-            :showTool="true"
             v-model:content="temp.content"
-            :fileSuffix="temp.name"
+            height="calc(100vh - 170px)"
+            :show-tool="true"
+            :file-suffix="temp.name"
           >
-            <template v-slot:tool_before>
+            <template #tool_before>
               <div v-show="temp.name">
                 名称： <a-tag color="red">{{ temp.name }}</a-tag>
               </div>
@@ -31,7 +31,7 @@
           <a-row type="flex" justify="center">
             <a-space>
               <a-button type="primary" danger :disabled="!temp || !temp.name" @click="saveData">保存</a-button>
-              <a-button type="primary" v-if="temp.hasDefault" :disabled="!temp || !temp.name" @click="readeDefault">
+              <a-button v-if="temp.hasDefault" type="primary" :disabled="!temp || !temp.name" @click="readeDefault">
                 读取默认
               </a-button>
             </a-space>
@@ -108,29 +108,22 @@ export default {
       })
     },
     addItemHander() {
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
-        content: '确认创建该【' + that.addName + '】配置文件吗？配置文件一旦创建不能通过管理页面删除的奥？',
+        content: '确认创建该【' + this.addName + '】配置文件吗？配置文件一旦创建不能通过管理页面删除的奥？',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            // 删除
-            addItem({ name: that.addName })
-              .then((res) => {
-                if (res.code === 200) {
-                  // 成功
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.addName = ''
-                  that.loadData()
-                }
-                resolve()
+        onOk: () => {
+          return addItem({ name: this.addName }).then((res) => {
+            if (res.code === 200) {
+              // 成功
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.addName = ''
+              this.loadData()
+            }
           })
         }
       })

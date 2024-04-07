@@ -1,13 +1,13 @@
 <template>
   <a-layout id="app-layout">
-    <a-layout-sider :theme="menuTheme" v-model:collapsed="collapsed" :trigger="null" collapsible>
-      <a-layout-sider class="sider" :theme="menuTheme" v-model:collapsed="collapsed" :trigger="null" collapsible>
+    <a-layout-sider v-model:collapsed="collapsed" :theme="menuTheme" :trigger="null" collapsible>
+      <a-layout-sider v-model:collapsed="collapsed" class="sider" :theme="menuTheme" :trigger="null" collapsible>
         <div class="sider-content">
           <a-tooltip placement="right" title="点击可以折叠左侧菜单栏">
             <div
               class="logo"
-              @click="changeCollapsed()"
               :style="`color:${menuTheme === 'light' && theme === 'light' ? '#000' : '#fff'}`"
+              @click="changeCollapsed()"
             >
               <img :src="logoUrl || defaultLogo" alt="logo" />
               {{ !collapsed ? subTitle : '' }}
@@ -44,8 +44,10 @@
         }"
         class="layout-content"
       >
-        <router-view v-slot="{ Component }">
-          <keep-alive> <component :is="Component" /> </keep-alive>
+        <router-view v-slot="{ Component, route }">
+          <keep-alive :include="menuTabKeyList">
+            <component :is="wrap(String(route.name), Component)" :key="String(route.name)" />
+          </keep-alive>
         </router-view>
       </a-layout-content>
     </a-layout>
@@ -59,6 +61,7 @@ import { checkSystem, loadingLogo } from '@/api/install'
 import { useAppStore } from '@/stores/app'
 import { useGuideStore } from '@/stores/guide'
 import defaultLogo from '@/assets/images/jpom.svg'
+import { useAllMenuStore } from '@/stores/menu2'
 
 defineProps({
   mode: {
@@ -66,6 +69,50 @@ defineProps({
     required: true
   }
 })
+
+// 页面缓存对象
+const wrapperMap = shallowRef(new Map())
+// 组件套壳，动态添加name属性
+const wrap = (name: string, component: any) => {
+  let wrapper
+  const wrapperName = name
+  if (wrapperMap.value.has(wrapperName)) {
+    wrapper = wrapperMap.value.get(wrapperName)
+  } else {
+    //包裹组件
+    wrapper = {
+      name: wrapperName,
+      render() {
+        return h('div', component)
+      }
+    }
+    wrapperMap.value.set(wrapperName, wrapper)
+  }
+  return h(wrapper)
+}
+const menuStore = useAllMenuStore()
+// 获取两个菜单中的tab key
+const menuTabKeyList = computed(() => {
+  return [...menuStore.normal_tabList, ...menuStore.management_tabList].map((item: { key: string }) => item.key)
+})
+// 监听menuTabKeyList变化
+watch(
+  menuTabKeyList,
+  (newKeys, oldKeys) => {
+    // 获取已被删除的key
+    oldKeys
+      ?.filter((key) => {
+        return !newKeys.includes(key)
+      })
+      .forEach((key) => {
+        // 删除缓存
+        wrapperMap.value.delete(key)
+      })
+  },
+  {
+    immediate: true
+  }
+)
 
 const collapsed = ref(false)
 const subTitle = ref('项目运维')
@@ -80,7 +127,7 @@ onMounted(() => {
 })
 
 const router = useRouter()
-const route = useRoute()
+// const route = useRoute()
 
 const menuTheme = computed(() => {
   return guideStore.getMenuThemeView()
@@ -113,7 +160,6 @@ const checkSystemHannder = () => {
       $notification.warn({
         message: res.msg
       })
-    } else {
     }
     if (res.code === 999) {
       router.push('/prohibit-access')

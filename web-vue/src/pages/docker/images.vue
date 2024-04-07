@@ -6,24 +6,24 @@
       :columns="columns"
       :pagination="false"
       bordered
-      rowKey="id"
+      row-key="id"
       :row-selection="rowSelection"
       :scroll="{
         x: 'max-content'
       }"
     >
-      <template v-slot:title>
+      <template #title>
         <a-space wrap class="search-box">
           <!-- <a-input v-model="listQuery['name']" @pressEnter="loadData" placeholder="名称" class="search-input-item" /> -->
           <div>
             显示所有
-            <a-switch checked-children="是" un-checked-children="否" v-model:checked="listQuery['showAll']" />
+            <a-switch v-model:checked="listQuery['showAll']" checked-children="是" un-checked-children="否" />
           </div>
           <div>
             悬空
-            <a-switch checked-children="是" un-checked-children="否" v-model:checked="listQuery['dangling']" />
+            <a-switch v-model:checked="listQuery['dangling']" checked-children="是" un-checked-children="否" />
           </div>
-          <a-button type="primary" @click="loadData" :loading="loading">搜索</a-button>
+          <a-button type="primary" :loading="loading" @click="loadData">搜索</a-button>
           <a-button type="primary" danger :disabled="!tableSelections || !tableSelections.length" @click="batchDelete"
             >批量删除</a-button
           >
@@ -32,12 +32,12 @@
 
           <a-input-search
             v-model:value="pullImageName"
-            @search="pullImage"
             style="width: 260px"
             placeholder="要拉取的镜像名称"
             class="search-input-item"
+            @search="pullImage"
           >
-            <template v-slot:enterButton>
+            <template #enterButton>
               <a-button><CloudDownloadOutlined /> </a-button>
             </template>
           </a-input-search>
@@ -48,12 +48,12 @@
             accept=".tar"
             action=""
             :disabled="!!percentage"
-            :showUploadList="false"
+            :show-upload-list="false"
             :multiple="false"
             :before-upload="beforeUpload"
           >
             <LoadingOutlined v-if="percentage" />
-            <a-button type="primary" v-else> <UploadOutlined />导入 </a-button>
+            <a-button v-else type="primary"> <UploadOutlined />导入 </a-button>
           </a-upload>
         </a-space>
       </template>
@@ -106,19 +106,19 @@
     <!-- 构建容器 -->
     <BuildContainer
       v-if="buildVisible"
-      :id="this.id"
-      :imageId="this.temp.id"
-      :machineDockerId="this.machineDockerId"
-      :urlPrefix="this.urlPrefix"
-      @cancelBtnClick="
+      :id="id"
+      :image-id="temp.id"
+      :machine-docker-id="machineDockerId"
+      :url-prefix="urlPrefix"
+      @cancel-btn-click="
         () => {
-          this.buildVisible = false
+          buildVisible = false
         }
       "
-      @confirmBtnClick="
+      @confirm-btn-click="
         () => {
-          this.buildVisible = false
-          this.loadData()
+          buildVisible = false
+          loadData()
         }
       "
     />
@@ -128,13 +128,13 @@
       v-if="logVisible > 0"
       :id="temp.id"
       :visible="logVisible != 0"
+      :machine-docker-id="machineDockerId"
+      :url-prefix="urlPrefix"
       @close="
         () => {
           logVisible = 0
         }
       "
-      :machineDockerId="this.machineDockerId"
-      :urlPrefix="this.urlPrefix"
     />
   </div>
 </template>
@@ -164,7 +164,8 @@ export default {
       default: ''
     },
     urlPrefix: {
-      type: String
+      type: String,
+      default: ''
     },
     machineDockerId: {
       type: String,
@@ -198,7 +199,7 @@ export default {
           width: '80px',
           ellipsis: true,
           align: 'center',
-          customRender: ({ text, record, index }) => `${index + 1}`
+          customRender: ({ index }) => `${index + 1}`
         },
         {
           title: '名称',
@@ -292,33 +293,26 @@ export default {
       if (!action) {
         return
       }
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: action.msg,
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            // 组装参数
-            const params = {
-              id: that.reqDataId,
+        onOk: () => {
+          return action
+            .api(this.urlPrefix, {
+              id: this.reqDataId,
               imageId: record.id
-            }
-            action
-              .api(that.urlPrefix, params)
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.loadData()
-                }
-                resolve()
-              })
-              .catch(reject)
-          })
+            })
+            .then((res) => {
+              if (res.code === 200) {
+                $notification.success({
+                  message: res.msg
+                })
+                this.loadData()
+              }
+            })
         }
       })
     },
@@ -340,10 +334,7 @@ export default {
     },
     // 创建容器
     handleBuildOk() {
-      this.$refs['editForm'].validate((valid) => {
-        if (!valid) {
-          return false
-        }
+      this.$refs['editForm'].validate().then(() => {
         const temp = {
           id: this.reqDataId,
           autorun: this.temp.autorun,
@@ -432,31 +423,24 @@ export default {
     // 分配
     batchDelete() {
       let ids = this.tableSelections
-      const that = this
+
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: '真的要批量删除选择的镜像吗？已经被容器使用的镜像无法删除！',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            // 组装参数
-            const params = {
-              id: that.reqDataId,
-              imagesIds: ids.join(',')
-            }
-            dockerImageBatchRemove(that.urlPrefix, params)
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.loadData()
-                }
-                resolve()
+        onOk: () => {
+          return dockerImageBatchRemove(this.urlPrefix, {
+            id: this.reqDataId,
+            imagesIds: ids.join(',')
+          }).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.loadData()
+            }
           })
         }
       })

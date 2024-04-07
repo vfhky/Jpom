@@ -1,7 +1,7 @@
 <template>
   <log-view
     :ref="`logView`"
-    titleName="构建日志"
+    title-name="构建日志"
     :visible="visible"
     @close="
       () => {
@@ -41,13 +41,21 @@ export default {
   },
   props: {
     temp: {
-      type: Object
+      /**
+       * {
+       * id:'',
+       * buildId:''
+       * }
+       */
+      type: Object,
+      default: () => {}
     },
     visible: {
       type: Boolean,
       default: false
     }
   },
+  emits: ['close'],
   data() {
     return {
       statusMap,
@@ -114,7 +122,6 @@ export default {
     handleDownload() {
       window.open(downloadBuildLog(this.logId), '_blank')
     }
-  },
-  emits: ['close']
+  }
 }
 </script>

@@ -1,16 +1,16 @@
 <template>
   <a-modal
-    destroyOnClose
     v-model:open="visibleModel"
+    destroy-on-close
     :width="style.width"
-    :bodyStyle="style.bodyStyle"
+    :body-style="style.bodyStyle"
     :style="style.style"
     :footer="null"
-    :maskClosable="false"
+    :mask-closable="false"
     @cancel="close"
   >
     <template #title>
-      <a-page-header :title="titleName" :backIcon="false" style="padding: 0">
+      <a-page-header :title="titleName" :back-icon="false" style="padding: 0">
         <template #subTitle>
           <a-row type="flex" align="middle">
             <a-col>
@@ -40,7 +40,7 @@
       </a-page-header>
     </template>
 
-    <viewPre ref="viewPre" :height="`calc(${style.bodyStyle.height} - 40px)`" :config="this.temp"></viewPre>
+    <viewPre ref="viewPre" :height="`calc(${style.bodyStyle.height} - 40px)`" :config="temp"></viewPre>
   </a-modal>
 </template>
 
@@ -57,26 +57,18 @@ export default {
     //   render: (h, ctx) => ctx.props.vnodes,
     // },
   },
-  computed: {
-    ...mapState(useGuideStore, ['getFullscreenViewLogStyle']),
-    regModifier() {
-      return this.regModifiers.join('')
-    },
-    style() {
-      return this.getFullscreenViewLogStyle()
-    }
-  },
+
   props: {
     titleName: {
-      String,
+      type: String,
       default: ''
     },
     marginTop: {
-      String,
+      type: String,
       default: '0'
     },
     extendBar: {
-      Boolean,
+      type: Boolean,
       default: true
     },
     visible: {
@@ -84,6 +76,7 @@ export default {
       default: false
     }
   },
+  emits: ['close'],
   data() {
     return {
       temp: {
@@ -92,6 +85,15 @@ export default {
         wordBreak: false
       },
       visibleModel: false
+    }
+  },
+  computed: {
+    ...mapState(useGuideStore, ['getFullscreenViewLogStyle']),
+    regModifier() {
+      return this.regModifiers.join('')
+    },
+    style() {
+      return this.getFullscreenViewLogStyle()
     }
   },
   created() {
@@ -120,8 +122,7 @@ export default {
       this.visibleModel = false
       this.$emit('close')
     }
-  },
-  emits: ['close']
+  }
 }
 </script>
 

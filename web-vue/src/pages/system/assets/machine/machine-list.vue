@@ -1,27 +1,61 @@
 <template>
   <div>
-    <a-card :bodyStyle="{ padding: '10px' }">
-      <template v-slot:title>
+    <!-- <a-card :body-style="{ padding: '10px' }"> -->
+    <!-- 卡片视图 -->
+    <!-- <template v-if="layoutType === 'card'"> </template> -->
+    <!-- 表格视图 -->
+    <!-- <template v-else-if="layoutType === 'table'"> -->
+    <CustomTable
+      is-show-tools
+      default-auto-refresh
+      :auto-refresh-time="30"
+      table-name="buildList"
+      empty-description="没有资产机器"
+      :active-page="activePage"
+      :columns="columns"
+      :data-source="list"
+      bordered
+      size="middle"
+      row-key="id"
+      :pagination="pagination"
+      :row-selection="rowSelection"
+      :scroll="{
+        x: 'max-content'
+      }"
+      @change="changePage"
+      @refresh="getMachineList"
+      @change-table-layout="
+        (layoutType) => {
+          tableSelections = []
+          listQuery = CHANGE_PAGE(listQuery, {
+            pagination: { limit: layoutType === 'card' ? 8 : 10 }
+          })
+          getMachineList()
+        }
+      "
+    >
+      <template #title>
         <a-space wrap class="search-box">
           <a-input
-            class="search-input-item"
-            @pressEnter="getMachineList"
             v-model:value="listQuery['%name%']"
+            class="search-input-item"
             placeholder="机器名称"
+            @press-enter="getMachineList"
           />
           <a-input
-            class="search-input-item"
-            @pressEnter="getMachineList"
             v-model:value="listQuery['%jpomUrl%']"
+            class="search-input-item"
             placeholder="节点地址"
+            @press-enter="getMachineList"
           />
           <a-input
-            class="search-input-item"
-            @pressEnter="getMachineList"
             v-model:value="listQuery['%jpomVersion%']"
+            class="search-input-item"
             placeholder="插件版本"
+            @press-enter="getMachineList"
           />
           <a-select
+            v-model:value="listQuery.groupName"
             show-search
             :filter-option="
               (input, option) => {
@@ -33,8 +67,7 @@
                 )
               }
             "
-            v-model:value="listQuery.groupName"
-            allowClear
+            allow-clear
             placeholder="分组"
             class="search-input-item"
           >
@@ -42,7 +75,7 @@
           </a-select>
           <a-select
             v-model:value="listQuery['order_field']"
-            allowClear
+            allow-clear
             placeholder="请选择排序字段"
             class="search-input-item"
           >
@@ -56,8 +89,8 @@
           <a-button :loading="loading" type="primary" @click="getMachineList">搜索</a-button>
           <a-button type="primary" @click="addMachine">新增</a-button>
 
-          <a-dropdown v-if="this.layoutType === 'table'">
-            <template v-slot:overlay>
+          <a-dropdown v-if="tableSelections && tableSelections.length">
+            <template #overlay>
               <a-menu>
                 <a-menu-item key="1" @click="syncToWorkspaceShow()"> 分配节点 </a-menu-item>
                 <a-menu-item key="2" @click="syncNodeWhiteConfig"> 同步授权 </a-menu-item>
@@ -69,248 +102,219 @@
           <a-tooltip v-else title="表格视图才能使用同步配置功能">
             <a-button :disabled="true" type="primary"> 批量操作<DownOutlined /></a-button>
           </a-tooltip>
-          <a-button type="primary" @click="changeLayout">
-            <template #icon>
-              <LayoutOutlined v-if="layoutType === 'card'" />
-              <TableOutlined v-else />
-            </template>
-
-            {{ this.layoutType === 'card' ? '卡片' : '表格' }}
-          </a-button>
-          <a-tooltip>
-            <template v-slot:title>
-              <ul>
-                <li>节点账号密码为插件端的账号密码,并非用户账号(管理员)密码</li>
-                <li>
-                  节点账号密码默认由系统生成：可以通过插件端数据目录下 agent_authorize.json
-                  文件查看（如果自定义配置了账号密码将没有此文件）
-                </li>
-                <li>节点地址为插件端的 IP:PORT 插件端端口默认为：2123</li>
-              </ul>
-            </template>
-            <QuestionCircleOutlined />
-          </a-tooltip>
         </a-space>
       </template>
-      <!-- 卡片视图 -->
-      <template v-if="this.layoutType === 'card'">
-        <a-row :gutter="[16, 16]">
-          <template v-if="list && list.length">
-            <a-col v-for="item in list" :span="6">
-              <a-card :headStyle="{ padding: '0 6px' }" :bodyStyle="{ padding: '10px' }">
-                <template v-slot:title>
-                  <a-row :gutter="[4, 0]">
-                    <a-col :span="17" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">
-                      <a-tooltip>
-                        <template v-slot:title>
-                          <div>节点名称：{{ item.name }}</div>
-                          <div>节点地址：{{ item.jpomUrl }}</div>
-                        </template>
-                        <span @click="showMachineInfo(item)" style="cursor: pointer">
-                          {{ item.name }}
-                        </span>
-                      </a-tooltip>
-                    </a-col>
-                    <a-col :span="7" style="text-align: right" class="text-overflow-hidden">
-                      <a-tooltip
-                        :title="`当前状态：${statusMap[item.status]} ${
-                          item.statusMsg ? '状态消息：' + item.statusMsg : '还没有状态消息'
-                        } `"
-                      >
-                        <a-tag :color="item.status === 1 ? 'green' : 'pink'" style="margin-right: 0">
-                          {{ statusMap[item.status] }}</a-tag
-                        >
-                      </a-tooltip>
-                    </a-col>
-                  </a-row>
-                </template>
-
-                <a-tooltip :title="item.osName">
-                  <a-row class="item-info">
-                    <a-col :span="6" class="title text-overflow-hidden">系统名称:</a-col>
-                    <a-col :span="18" class="content text-overflow-hidden">
-                      <a-button
-                        :disabled="!item.osName"
-                        style="padding: 0; height: auto"
-                        type="link"
-                        size="small"
-                        @click="showMachineInfo(item)"
-                      >
-                        {{ item.osName || '-' }}
-                      </a-button>
-                    </a-col>
-                  </a-row>
-                </a-tooltip>
-                <a-tooltip :title="item.osVersion">
-                  <a-row class="item-info">
-                    <a-col :span="6" class="title text-overflow-hidden">系统版本:</a-col>
-                    <a-col :span="18" class="content text-overflow-hidden">
-                      {{ item.osVersion || '-' }}
-                    </a-col>
-                  </a-row>
-                </a-tooltip>
-                <a-tooltip :title="item.osLoadAverage">
-                  <a-row class="item-info">
-                    <a-col :span="6" class="title text-overflow-hidden">系统负载:</a-col>
-                    <a-col :span="18" class="content text-overflow-hidden">
-                      {{ item.osLoadAverage || '-' }}
-                    </a-col>
-                  </a-row>
-                </a-tooltip>
-                <a-tooltip :title="item.jpomVersion">
-                  <a-row class="item-info">
-                    <a-col :span="6" class="title text-overflow-hidden">插件版本:</a-col>
-                    <a-col :span="18" class="content text-overflow-hidden">
-                      <a-button
-                        :disabled="!item.jpomVersion"
-                        style="padding: 0; height: auto"
-                        type="link"
-                        size="small"
-                        @click="showMachineUpgrade(item)"
-                      >
-                        {{ item.jpomVersion || '-' }}
-                      </a-button>
-                    </a-col>
-                  </a-row>
-                </a-tooltip>
-                <a-row type="flex" align="middle" justify="center" style="margin-top: 10px">
-                  <a-button-group>
-                    <a-button @click="handleEdit(item)" type="primary" size="small"> 编辑 </a-button>
-                    <a-button @click="showMachineInfo(item)" type="primary" size="small">详情</a-button>
-                    <a-button @click="syncToWorkspaceShow(item)" type="primary" size="small">分配</a-button>
-                    <a-button @click="viewMachineNode(item)" type="primary" size="small">节点</a-button>
-                    <a-button @click="deleteMachineInfo(item)" size="small">删除</a-button>
-                  </a-button-group>
-                </a-row>
-              </a-card>
-            </a-col>
+      <template #tableHelp>
+        <a-tooltip>
+          <template #title>
+            <ul>
+              <li>节点账号密码为插件端的账号密码,并非用户账号(管理员)密码</li>
+              <li>
+                节点账号密码默认由系统生成：可以通过插件端数据目录下 agent_authorize.json
+                文件查看（如果自定义配置了账号密码将没有此文件）
+              </li>
+              <li>节点地址为插件端的 IP:PORT 插件端端口默认为：2123</li>
+            </ul>
           </template>
-          <!-- </template> -->
-          <a-col v-else :span="24">
-            <a-empty :image="Empty.PRESENTED_IMAGE_SIMPLE" description="没有任何节点" />
-          </a-col>
-        </a-row>
+          <QuestionCircleOutlined />
+        </a-tooltip>
+      </template>
+      <template #tableBodyCell="{ column, text, record }">
+        <template v-if="column.dataIndex === 'name'">
+          <a-tooltip :title="text">
+            <a-button style="padding: 0" type="link" size="small" @click="showMachineInfo(record)">
+              {{ text }}
+            </a-button>
+          </a-tooltip>
+        </template>
+        <template v-else-if="column.tooltip">
+          <a-tooltip :title="text">
+            <span>{{ text }}</span>
+          </a-tooltip>
+        </template>
+        <template v-else-if="column.dataIndex === 'status'">
+          <a-tooltip
+            :title="`当前状态：${statusMap[record.status]} ${
+              record.statusMsg ? '状态消息：' + record.statusMsg : '还没有状态消息'
+            } `"
+          >
+            <a-tag :color="record.status === 1 ? 'green' : 'pink'" style="margin-right: 0">
+              {{ statusMap[record.status] }}
+            </a-tag>
+          </a-tooltip>
+        </template>
+        <template v-else-if="column.duration">
+          <a-tooltip placement="topLeft" :title="formatDuration(text)">
+            <span>{{ formatDuration(text, '', 2) }}</span>
+          </a-tooltip>
+        </template>
+        <template v-else-if="column.duration2">
+          <a-tooltip placement="topLeft" :title="formatDuration((text || 0) * 1000)">
+            <span>{{ formatDuration((text || 0) * 1000, '', 2) }}</span>
+          </a-tooltip>
+        </template>
+        <template v-else-if="column.percent2Number">
+          <a-tooltip placement="topLeft" :title="`${(text && formatPercent2Number(text) + '%') || '-'}`">
+            <span>{{ (text && formatPercent2Number(text) + '%') || '-' }}</span>
+          </a-tooltip>
+        </template>
+
+        <template v-else-if="column.dataIndex === 'operation'">
+          <a-space>
+            <a-button type="primary" size="small" @click="handleEdit(record)">编辑</a-button>
+            <a-button type="primary" size="small" @click="syncToWorkspaceShow(record)">分配</a-button>
+            <a-button type="primary" danger size="small" @click="deleteMachineInfo(record)">删除</a-button>
+          </a-space>
+        </template>
+      </template>
+
+      <template #cardBodyCell="{ item }">
+        <a-card :head-style="{ padding: '0 6px' }" :body-style="{ padding: '10px' }">
+          <template #title>
+            <a-row :gutter="[4, 0]">
+              <a-col :span="17" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">
+                <a-tooltip>
+                  <template #title>
+                    <div>节点名称：{{ item.name }}</div>
+                    <div>节点地址：{{ item.jpomUrl }}</div>
+                  </template>
+                  <span style="cursor: pointer" @click="showMachineInfo(item)">
+                    {{ item.name }}
+                  </span>
+                </a-tooltip>
+              </a-col>
+              <a-col :span="7" style="text-align: right" class="text-overflow-hidden">
+                <a-tooltip
+                  :title="`当前状态：${statusMap[item.status]} ${
+                    item.statusMsg ? '状态消息：' + item.statusMsg : '还没有状态消息'
+                  } `"
+                >
+                  <a-tag :color="item.status === 1 ? 'green' : 'pink'" style="margin-right: 0">
+                    {{ statusMap[item.status] }}</a-tag
+                  >
+                </a-tooltip>
+              </a-col>
+            </a-row>
+          </template>
+
+          <a-tooltip :title="item.osName">
+            <a-row class="item-info">
+              <a-col :span="6" class="title text-overflow-hidden">系统名称:</a-col>
+              <a-col :span="18" class="content text-overflow-hidden">
+                <a-button
+                  :disabled="!item.osName"
+                  style="padding: 0; height: auto"
+                  type="link"
+                  size="small"
+                  @click="showMachineInfo(item)"
+                >
+                  {{ item.osName || '-' }}
+                </a-button>
+              </a-col>
+            </a-row>
+          </a-tooltip>
+          <a-tooltip :title="item.osVersion">
+            <a-row class="item-info">
+              <a-col :span="6" class="title text-overflow-hidden">系统版本:</a-col>
+              <a-col :span="18" class="content text-overflow-hidden">
+                {{ item.osVersion || '-' }}
+              </a-col>
+            </a-row>
+          </a-tooltip>
+          <a-tooltip :title="item.osLoadAverage">
+            <a-row class="item-info">
+              <a-col :span="6" class="title text-overflow-hidden">系统负载:</a-col>
+              <a-col :span="18" class="content text-overflow-hidden">
+                {{ item.osLoadAverage || '-' }}
+              </a-col>
+            </a-row>
+          </a-tooltip>
+          <a-tooltip :title="item.jpomVersion">
+            <a-row class="item-info">
+              <a-col :span="6" class="title text-overflow-hidden">插件版本:</a-col>
+              <a-col :span="18" class="content text-overflow-hidden">
+                <a-button
+                  :disabled="!item.jpomVersion"
+                  style="padding: 0; height: auto"
+                  type="link"
+                  size="small"
+                  @click="showMachineUpgrade(item)"
+                >
+                  {{ item.jpomVersion || '-' }}
+                </a-button>
+              </a-col>
+            </a-row>
+          </a-tooltip>
+          <a-row type="flex" align="middle" justify="center" style="margin-top: 10px">
+            <a-button-group>
+              <a-button type="primary" size="small" @click="handleEdit(item)"> 编辑 </a-button>
+              <a-button type="primary" size="small" @click="showMachineInfo(item)">详情</a-button>
+              <a-button type="primary" size="small" @click="syncToWorkspaceShow(item)">分配</a-button>
+              <a-button type="primary" size="small" @click="viewMachineNode(item)">节点</a-button>
+              <a-button size="small" @click="deleteMachineInfo(item)">删除</a-button>
+            </a-button-group>
+          </a-row>
+        </a-card>
+      </template>
+      <!-- <template #cardPageTool>
         <a-row type="flex" justify="center">
           <a-divider v-if="listQuery.total / listQuery.limit > 1" dashed />
           <a-col>
             <a-pagination
               v-model:current="listQuery.page"
-              :showTotal="
+              v-model:pageSize="listQuery.limit"
+              :show-total="
                 (total) => {
                   return PAGE_DEFAULT_SHOW_TOTAL(total, listQuery)
                 }
               "
-              :showSizeChanger="true"
-              :pageSizeOptions="sizeOptions"
-              v-model:pageSize="listQuery.limit"
+              :show-size-changer="true"
+              :page-size-options="sizeOptions"
               :total="listQuery.total"
-              :hideOnSinglePage="true"
-              @showSizeChange="
+              :hide-on-single-page="true"
+              show-less-items
+              @show-size-change="
                 (current, size) => {
-                  this.listQuery.limit = size
-                  this.getMachineList()
+                  listQuery.limit = size
+                  getMachineList()
                 }
               "
-              @change="this.getMachineList"
-              show-less-items
+              @change="getMachineList"
             />
-          </a-col>
-        </a-row>
-      </template>
-      <!-- 表格视图 -->
-      <template v-else-if="this.layoutType === 'table'">
-        <a-table
-          :columns="columns"
-          :data-source="list"
-          bordered
-          size="middle"
-          rowKey="id"
-          :pagination="pagination"
-          @change="changePage"
-          :row-selection="rowSelection"
-          :scroll="{
-            x: 'max-content'
-          }"
-        >
-          <template #bodyCell="{ column, text, record }">
-            <template v-if="column.dataIndex === 'name'">
-              <a-tooltip :title="text">
-                <a-button style="padding: 0" type="link" size="small" @click="showMachineInfo(record)">
-                  {{ text }}
-                </a-button>
-              </a-tooltip>
-            </template>
-            <template v-else-if="column.tooltip">
-              <a-tooltip :title="text">
-                <span>{{ text }}</span>
-              </a-tooltip>
-            </template>
-            <template v-else-if="column.dataIndex === 'status'">
-              <a-tooltip
-                :title="`当前状态：${statusMap[record.status]} ${
-                  record.statusMsg ? '状态消息：' + record.statusMsg : '还没有状态消息'
-                } `"
-              >
-                <a-tag :color="record.status === 1 ? 'green' : 'pink'" style="margin-right: 0">
-                  {{ statusMap[record.status] }}
-                </a-tag>
-              </a-tooltip>
-            </template>
-            <template v-else-if="column.duration">
-              <a-tooltip placement="topLeft" :title="formatDuration(text)">
-                <span>{{ formatDuration(text, '', 2) }}</span>
-              </a-tooltip>
-            </template>
-            <template v-else-if="column.duration2">
-              <a-tooltip placement="topLeft" :title="formatDuration((text || 0) * 1000)">
-                <span>{{ formatDuration((text || 0) * 1000, '', 2) }}</span>
-              </a-tooltip>
-            </template>
-            <template v-else-if="column.percent2Number">
-              <a-tooltip placement="topLeft" :title="`${(text && formatPercent2Number(text) + '%') || '-'}`">
-                <span>{{ (text && formatPercent2Number(text) + '%') || '-' }}</span>
-              </a-tooltip>
-            </template>
-
-            <template v-else-if="column.dataIndex === 'operation'">
-              <a-space>
-                <a-button type="primary" size="small" @click="handleEdit(record)">编辑</a-button>
-                <a-button @click="syncToWorkspaceShow(record)" type="primary" size="small">分配</a-button>
-              </a-space>
-            </template>
-          </template>
-        </a-table>
-      </template>
-    </a-card>
+          </a-col> </a-row
+      ></template> -->
+    </CustomTable>
+    <!-- </template> -->
+    <!-- </a-card> -->
     <!-- 编辑区 -->
     <a-modal
-      destroyOnClose
-      :confirmLoading="confirmLoading"
       v-model:open="editVisible"
+      destroy-on-close
+      :confirm-loading="confirmLoading"
       width="50%"
       title="编辑机器"
+      :mask-closable="false"
       @ok="handleEditOk"
-      :maskClosable="false"
     >
       <a-form ref="editNodeForm" :rules="rules" :model="temp" :label-col="{ span: 4 }" :wrapper-col="{ span: 19 }">
         <a-form-item label="机器名称" name="name">
-          <a-input :maxLength="50" v-model:value="temp.name" placeholder="机器名称" />
+          <a-input v-model:value="temp.name" :max-length="50" placeholder="机器名称" />
         </a-form-item>
         <a-form-item label="机器分组" name="groupName">
           <custom-select
             v-model:value="temp.groupName"
             :data="groupList"
-            inputPlaceholder="新增分组"
-            selectPlaceholder="选择分组名"
+            input-placeholder="新增分组"
+            select-placeholder="选择分组名"
           >
           </custom-select>
         </a-form-item>
 
         <a-form-item name="jpomUrl">
-          <template v-slot:label>
+          <template #label>
             <a-tooltip>
               节点地址
-              <template v-slot:title
+              <template #title
                 >节点地址为插件端的 IP:PORT 插件端端口默认为：2123
                 <ul>
                   <li>节点地址建议使用内网地址</li>
@@ -322,8 +326,8 @@
           </template>
           <template #help>节点地址格式为：IP:PORT (示例：192.168.1.100:2123)</template>
           <a-input v-model:value="temp.jpomUrl" placeholder="节点地址 (192.168.1.100:2123)">
-            <template v-slot:addonBefore>
-              <a-select placeholder="协议类型" v-model:value="temp.jpomProtocol" style="width: 160px">
+            <template #addonBefore>
+              <a-select v-model:value="temp.jpomProtocol" placeholder="协议类型" style="width: 160px">
                 <a-select-option value="Http"> Http:// </a-select-option>
                 <a-select-option value="Https"> Https:// </a-select-option>
               </a-select>
@@ -336,10 +340,10 @@
           <template #help>默认账号为：jpomAgent</template>
         </a-form-item>
         <a-form-item :name="`${temp.id ? 'loginPwd-update' : 'loginPwd'}`">
-          <template v-slot:label>
+          <template #label>
             <a-tooltip>
               节点密码
-              <template v-slot:title>
+              <template #title>
                 节点账号密码默认由系统生成：可以通过插件端数据目录下 agent_authorize.json
                 文件查看（如果自定义配置了账号密码将没有此文件）
               </template>
@@ -353,10 +357,10 @@
           <a-collapse-panel key="1" header="其他配置">
             <a-form-item label="模板节点" name="templateNode" help="">
               <a-switch
+                v-model:checked="temp.templateNode"
                 checked-children="是"
                 un-checked-children="否"
                 default-checked
-                v-model:checked="temp.templateNode"
               />
               以此机器节点配置为模板,用于快捷同步其他机器节点的配置
             </a-form-item>
@@ -372,7 +376,7 @@
 
             <a-form-item label="代理" name="jpomHttpProxy">
               <a-input v-model:value="temp.jpomHttpProxy" placeholder="代理地址 (127.0.0.1:8888)">
-                <template v-slot:addonBefore>
+                <template #addonBefore>
                   <a-select
                     v-model:value="temp.jpomHttpProxyType"
                     placeholder="选择代理类型"
@@ -389,9 +393,9 @@
 
             <a-form-item label="编码方式" name="transportEncryption">
               <a-select
+                v-model:value="temp.transportEncryption"
                 show-search
                 default-value="0"
-                v-model:value="temp.transportEncryption"
                 placeholder="请选择编码方式"
               >
                 <a-select-option :value="0">不编码</a-select-option>
@@ -407,39 +411,40 @@
 
     <machine-info
       v-if="drawerVisible"
-      :machineId="temp.id"
+      :machine-id="temp.id"
       :name="temp.name"
       @close="
         () => {
-          this.drawerVisible = false
+          drawerVisible = false
         }
       "
     />
     <!-- 机器在线升级相关信息 -->
     <machine-info
       v-if="drawerUpgradeVisible"
-      :machineId="temp.id"
+      :machine-id="temp.id"
       :name="temp.name"
       tab="upgrade"
       @close="
         () => {
-          this.drawerUpgradeVisible = false
+          drawerUpgradeVisible = false
         }
       "
     />
 
     <!-- 分配到其他工作空间 -->
     <a-modal
-      destroyOnClose
-      :confirmLoading="confirmLoading"
       v-model:open="syncToWorkspaceVisible"
+      destroy-on-close
+      :confirm-loading="confirmLoading"
       title="分配到其他工作空间"
+      :mask-closable="false"
       @ok="handleSyncToWorkspace"
-      :maskClosable="false"
     >
       <a-form :model="temp" :label-col="{ span: 6 }" :wrapper-col="{ span: 14 }">
         <a-form-item label="选择工作空间" name="workspaceId">
           <a-select
+            v-model:value="temp.workspaceId"
             show-search
             :filter-option="
               (input, option) => {
@@ -451,7 +456,6 @@
                 )
               }
             "
-            v-model:value="temp.workspaceId"
             placeholder="请选择工作空间"
           >
             <a-select-option v-for="item in workspaceList" :key="item.id">{{ item.name }}</a-select-option>
@@ -462,15 +466,15 @@
 
     <!-- 查看机器关联节点 -->
     <a-modal
-      destroyOnClose
       v-model:open="viewLinkNode"
+      destroy-on-close
       width="50%"
       title="关联节点"
       :footer="null"
-      :maskClosable="false"
+      :mask-closable="false"
     >
       <a-list bordered :data-source="nodeList">
-        <template v-slot:renderItem="{ item }">
+        <template #renderItem="{ item }">
           <a-list-item style="display: block">
             <a-row>
               <a-col :span="10">节点名称：{{ item.name }}</a-col>
@@ -486,13 +490,13 @@
     </a-modal>
     <!-- 分发节点授权 -->
     <a-modal
-      destroyOnClose
-      :confirmLoading="confirmLoading"
       v-model:open="whiteConfigVisible"
+      destroy-on-close
+      :confirm-loading="confirmLoading"
       width="50%"
       title="同步节点授权"
+      :mask-closable="false"
       @ok="onSubmitWhitelist"
-      :maskClosable="false"
     >
       <a-alert
         :message="`一键分发同步多个节点的授权配置,不用挨个配置。配置后会覆盖之前的配置,一般用于节点环境一致的情况`"
@@ -502,6 +506,7 @@
       <a-form ref="editWhiteForm" :model="temp" :label-col="{ span: 6 }" :wrapper-col="{ span: 14 }">
         <a-form-item label="模板节点">
           <a-select
+            v-model:value="temp.templateNodeId"
             show-search
             :filter-option="
               (input, option) => {
@@ -513,9 +518,8 @@
                 )
               }
             "
-            @change="(id) => loadWhitelistData(id)"
             placeholder="请选择模板节点"
-            v-model:value="temp.templateNodeId"
+            @change="(id) => loadWhitelistData(id)"
           >
             <a-select-option v-for="item in templateNodeList" :key="item.id" :value="item.id">
               {{ item.name }}
@@ -543,12 +547,12 @@
     </a-modal>
     <!-- 分发机器配置 -->
     <a-modal
-      destroyOnClose
-      :confirmLoading="confirmLoading"
       v-model:open="nodeConfigVisible"
+      destroy-on-close
+      :confirm-loading="confirmLoading"
       width="50%"
       title="同步节点配置"
-      :maskClosable="false"
+      :mask-closable="false"
     >
       <template #footer>
         <a-space>
@@ -564,8 +568,8 @@
       <a-form ref="editNodeConfigForm" :model="temp">
         <a-form-item label="模版节点">
           <a-select
+            v-model:value="temp.templateNodeId"
             show-search
-            @change="(id) => loadNodeConfig(id)"
             :filter-option="
               (input, option) => {
                 const children = option.children && option.children()
@@ -577,7 +581,7 @@
               }
             "
             placeholder="请选择模版节点"
-            v-model:value="temp.templateNodeId"
+            @change="(id) => loadNodeConfig(id)"
           >
             <a-select-option v-for="item in templateNodeList" :key="item.id" :value="item.id">
               {{ item.name }}
@@ -587,8 +591,8 @@
 
         <a-form-item :wrapper-col="{ span: 24 }">
           <code-editor
-            height="40vh"
             v-model:content="temp.content"
+            height="40vh"
             :options="{ mode: 'yaml', tabSize: 2 }"
           ></code-editor>
         </a-form-item>
@@ -614,11 +618,11 @@ import {
   CHANGE_PAGE,
   COMPUTED_PAGINATION,
   PAGE_DEFAULT_LIST_QUERY,
-  PAGE_DEFAULT_SHOW_TOTAL,
+  // PAGE_DEFAULT_SHOW_TOTAL,
   formatDuration,
   parseTime,
-  formatPercent2Number,
-  getCachePageLimit
+  formatPercent2Number
+  // getCachePageLimit
 } from '@/utils/const'
 import CustomSelect from '@/components/customSelect'
 import { useAppStore } from '@/stores/app'
@@ -626,7 +630,7 @@ import { mapState } from 'pinia'
 import machineInfo from './machine-func'
 import { getWorkSpaceListAll } from '@/api/workspace'
 // import Upgrade from "@/pages/node/node-layout/system/upgrade.vue";
-import { Empty } from 'ant-design-vue'
+
 import { getWhiteList } from '@/api/node-system'
 import { getConfigData } from '@/api/system'
 import codeEditor from '@/components/codeEditor'
@@ -640,10 +644,9 @@ export default {
   },
   data() {
     return {
-      Empty,
       statusMap,
       listQuery: Object.assign({ order: 'descend', order_field: 'networkDelay' }, PAGE_DEFAULT_LIST_QUERY, {}),
-      sizeOptions: ['8', '12', '16', '20', '24'],
+      // sizeOptions: ['8', '12', '16', '20', '24'],
       list: [],
       groupList: [],
       loading: true,
@@ -774,7 +777,6 @@ export default {
           dataIndex: 'operation',
           width: '120px',
           fixed: 'right',
-
           align: 'center'
         }
       ],
@@ -790,6 +792,9 @@ export default {
     pagination() {
       return COMPUTED_PAGINATION(this.listQuery)
     },
+    activePage() {
+      return this.$attrs.routerUrl === this.$route.path
+    },
     rowSelection() {
       return {
         onChange: (selectedRowKeys) => {
@@ -801,13 +806,15 @@ export default {
   },
   mounted() {
     this.loadGroupList()
-    this.changeLayout()
+    this.getMachineList()
   },
   methods: {
     parseTime,
     formatDuration,
     formatPercent2Number,
-    PAGE_DEFAULT_SHOW_TOTAL,
+    CHANGE_PAGE,
+    // PAGE_DEFAULT_SHOW_TOTAL,
+    // getCachePageLimit,
     // 获取所有的分组
     loadGroupList() {
       machineListGroup().then((res) => {
@@ -875,31 +882,23 @@ export default {
     },
     // 删除机器
     deleteMachineInfo(item) {
-      const that = this
       $confirm({
         title: '系统提示',
         zIndex: 1009,
         content: '真的要删除机器么？删除会检查数据关联性',
         okText: '确认',
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            // 删除
-            machineDelete({
-              id: item.id
-            })
-              .then((res) => {
-                if (res.code === 200) {
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.getMachineList()
-                }
-                resolve()
+        onOk: () =>
+          machineDelete({
+            id: item.id
+          }).then((res) => {
+            if (res.code === 200) {
+              $notification.success({
+                message: res.msg
               })
-              .catch(reject)
+              this.getMachineList()
+            }
           })
-        }
       })
     },
     // 加载工作空间数据
@@ -978,22 +977,7 @@ export default {
       })
       window.open(newpage.href, '_blank')
     },
-    // 切换视图
-    changeLayout() {
-      if (!this.layoutType) {
-        const layoutType = localStorage.getItem('tableLayout')
-        // 默认表格
-        this.layoutType = layoutType === 'card' ? 'card' : 'table'
-      } else {
-        this.layoutType = this.layoutType === 'card' ? 'table' : 'card'
-        localStorage.setItem('tableLayout', this.layoutType)
-      }
-      this.listQuery = {
-        ...this.listQuery,
-        limit: this.layoutType === 'card' ? 8 : getCachePageLimit()
-      }
-      this.getMachineList()
-    },
+
     syncNodeWhiteConfig() {
       if (!this.tableSelections || this.tableSelections.length <= 0) {
         $notification.warn({
@@ -1089,7 +1073,6 @@ export default {
     },
     // submit
     onNodeSubmit(restart) {
-      const that = this
       $confirm({
         title: '系统提示',
         content: restart
@@ -1098,30 +1081,26 @@ export default {
         okText: '确认',
         zIndex: 1009,
         cancelText: '取消',
-        async onOk() {
-          return await new Promise((resolve, reject) => {
-            that.confirmLoading = true
-            saveNodeConfig({
-              ...that.temp,
-              restart: restart,
-              ids: that.tableSelections.join(',')
-            })
-              .then((res) => {
-                if (res.code === 200) {
-                  // 成功
-                  $notification.success({
-                    message: res.msg
-                  })
-                  that.nodeConfigVisible = false
-                  that.tableSelections = []
-                }
-                resolve()
-              })
-              .catch(reject)
-              .finally(() => {
-                that.confirmLoading = false
-              })
+        onOk: () => {
+          this.confirmLoading = true
+          return saveNodeConfig({
+            ...this.temp,
+            restart: restart,
+            ids: this.tableSelections.join(',')
           })
+            .then((res) => {
+              if (res.code === 200) {
+                // 成功
+                $notification.success({
+                  message: res.msg
+                })
+                this.nodeConfigVisible = false
+                this.tableSelections = []
+              }
+            })
+            .finally(() => {
+              this.confirmLoading = false
+            })
         }
       })
     }
