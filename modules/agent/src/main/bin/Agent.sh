@@ -75,12 +75,12 @@ fi
 
 JavaVersion=$($JAVA -version 2>&1 | awk 'NR==1{ gsub(/"/,""); print $3 }' | awk -F '.' '{print $1}')
 Java64Str=$($JAVA -version 2>&1 | grep -E '64-bit|64-Bit')
-JAVA_OPTS="$JAVA_OPTS -Xss256k -XX:-UseBiasedLocking -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$LogPath"
+JAVA_OPTS="$JAVA_OPTS -Xss256k -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$LogPath"
 
 if [ "${JavaVersion}" -ge 11 ]; then
-	JAVA_OPTS="$JAVA_OPTS"
+	JAVA_OPTS="$JAVA_OPTS --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/sun.security.x509=ALL-UNNAMED"
 else
-	JAVA_OPTS="$JAVA_OPTS -XX:+UseFastAccessorMethods -XX:+PrintAdaptiveSizePolicy -XX:+PrintTenuringDistribution"
+	JAVA_OPTS="$JAVA_OPTS -XX:-UseBiasedLocking -XX:+UseFastAccessorMethods -XX:+PrintAdaptiveSizePolicy -XX:+PrintTenuringDistribution"
 fi
 
 #-Xms500m -Xmx1024m
