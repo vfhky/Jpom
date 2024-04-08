@@ -1544,15 +1544,15 @@ export default {
         '# node 镜像源 https://registry.npmmirror.com/-/binary/node/\n' +
         'steps:\n' +
         '  - uses: java\n' +
-        '    version: 8\n' +
+        '    version: 21\n' +
         '  - uses: maven\n' +
-        '    version: 3.8.7\n' +
+        '    version: 3.9.6\n' +
         '  - uses: node\n' +
-        '    version: 16.3.0\n' +
+        '    version: 20.12.1\n' +
         '#  - uses: go\n' +
         '#    version: 1.17.6\n' +
         '#  - uses: python3\n' +
-        '#    version: 3.6.6\n' +
+        '#    version: 3.12.0\n' +
         '# 将容器中的 maven 仓库文件缓存到 docker 卷中\n' +
         '  - uses: cache\n' +
         '    path: /root/.m2\n' +
