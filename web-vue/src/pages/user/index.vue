@@ -161,6 +161,11 @@
         <a-form-item label="昵称" name="name">
           <a-input v-model:value="temp.name" :max-length="50" placeholder="昵称" />
         </a-form-item>
+
+        <a-form-item label="邮箱" name="email">
+          <a-input v-model:value="temp.name" :max-length="50" placeholder="昵称" />
+        </a-form-item>
+
         <a-form-item name="systemUser">
           <template #label>
             <a-tooltip>
