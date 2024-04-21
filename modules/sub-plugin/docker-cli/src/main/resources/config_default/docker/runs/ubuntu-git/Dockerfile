@@ -8,7 +8,7 @@
 # See the Mulan PSL v2 for more details.
 #
 
-FROM ubuntu:latest
+FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG C.UTF-8
 RUN sed -i s/archive.ubuntu.com/mirrors.aliyun.com/g /etc/apt/sources.list \
