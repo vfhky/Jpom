@@ -11,8 +11,18 @@
 FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG C.UTF-8
-RUN sed -i s/archive.ubuntu.com/mirrors.aliyun.com/g /etc/apt/sources.list \
-    && sed -i s/security.ubuntu.com/mirrors.aliyun.com/g /etc/apt/sources.list \
+
+RUN echo '' > /etc/apt/sources.list  \
+    && echo 'deb http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse' >> /etc/apt/sources.list \
+    && echo 'deb-src http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse' >> /etc/apt/sources.list \
+    && echo 'deb http://mirrors.aliyun.com/ubuntu/ jammy-security main restricted universe multiverse' >> /etc/apt/sources.list \
+    && echo 'deb-src http://mirrors.aliyun.com/ubuntu/ jammy-security main restricted universe multiverse' >> /etc/apt/sources.list \
+    && echo 'deb http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse' >> /etc/apt/sources.list \
+    && echo 'deb-src http://mirrors.aliyun.com/ubuntu/ jammy-updates main restricted universe multiverse' >> /etc/apt/sources.list \
+    && echo 'deb http://mirrors.aliyun.com/ubuntu/ jammy-proposed main restricted universe multiverse' >> /etc/apt/sources.list \
+    && echo 'deb-src http://mirrors.aliyun.com/ubuntu/ jammy-proposed main restricted universe multiverse' >> /etc/apt/sources.list \
+    && echo 'deb http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse' >> /etc/apt/sources.list \
+    && echo 'deb-src http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse' >> /etc/apt/sources.list \
     && apt-get update \
     && apt-get install -y curl wget git
 
