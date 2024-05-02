@@ -12,6 +12,7 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG C.UTF-8
 
+
 RUN echo '' > /etc/apt/sources.list  \
     && echo 'deb http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse' >> /etc/apt/sources.list \
     && echo 'deb-src http://mirrors.aliyun.com/ubuntu/ jammy main restricted universe multiverse' >> /etc/apt/sources.list \
@@ -24,6 +25,6 @@ RUN echo '' > /etc/apt/sources.list  \
     && echo 'deb http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse' >> /etc/apt/sources.list \
     && echo 'deb-src http://mirrors.aliyun.com/ubuntu/ jammy-backports main restricted universe multiverse' >> /etc/apt/sources.list \
     && apt-get update \
-    && apt-get install -y curl wget git
+    && apt-get install -y curl wget gcc g++ make cmake
 
 ENTRYPOINT ["/bin/bash", "/tmp/build.sh"]
